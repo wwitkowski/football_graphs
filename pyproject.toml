@@ -5,12 +5,16 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "boto3>=1.37.13",
-    "footgraph",
+    "data-backend",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
 ]
 
 [tool.uv.workspace]
-members = ["footgraph"]
+members = ["data_backend"]
 
 [tool.uv.sources]
-footgraph = { workspace = true }
+data-backend = { workspace = true }
