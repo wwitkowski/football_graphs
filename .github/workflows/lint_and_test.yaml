@@ -52,7 +52,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/uv
-          key: ${{ needs.setup.outputs.cache-key }}
+          key: uv-deps-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
 
       - name: Run ruff
         run: uv run ruff check ${{ matrix.target.path }}
@@ -77,7 +77,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/uv
-          key: ${{ needs.setup.outputs.cache-key }}
+          key: uv-deps-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
 
       - name: Run pytest
         run: uv run pytest ${{ matrix.target.path }}
