@@ -24,16 +24,6 @@ jobs:
         with:
           python-version-file: ".python-version"
 
-      - name: Create cache directory
-        run: mkdir -p $HOME/.cache/uv
-
-      - name: Cache dependencies
-        id: cache-key
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/uv
-          key: uv-deps-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
-
       - name: Install the project
         run: uv sync --all-extras --dev
 
@@ -50,12 +40,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Restore cached dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/uv
-          key: uv-deps-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
 
       - name: Run ruff
         run: uv run ruff check ${{ matrix.target.path }}
@@ -75,12 +59,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Restore cached dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/uv
-          key: uv-deps-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
 
       - name: Run pytest
         run: uv run pytest ${{ matrix.target.path }}
