@@ -51,10 +51,14 @@ jobs:
           cache-dependency-glob: "**/pyproject.toml"
 
       - name: Run ruff
-        run: uv run ruff check ${{ matrix.target.path }}
+        run: |
+          uv tool install ruff
+          uv run ruff check ${{ matrix.target.path }}
 
       - name: Run mypy
-        run: uv run mypy --explicit-package-bases ${{ matrix.target.path }}
+        run: |
+          uv tool install mypy
+          uv run mypy --explicit-package-bases ${{ matrix.target.path }}
 
   test:
     name: Run Tests
@@ -63,8 +67,8 @@ jobs:
     strategy:
       matrix:
         target:
-          - path: "scripts/football_api/tests"
-          - path: "data_backend/tests"
+          - path: "scripts/football_api"
+          - path: "data_backend"
 
     steps:
       - uses: actions/checkout@v4
@@ -77,4 +81,4 @@ jobs:
           cache-dependency-glob: "**/pyproject.toml"
 
       - name: Run pytest
-        run: uv run pytest ${{ matrix.target.path }}
+        run: PYTHONPATH=${{ matrix.target.path }} uv run pytest tests
