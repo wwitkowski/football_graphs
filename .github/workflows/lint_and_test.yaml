@@ -43,7 +43,7 @@ jobs:
         target:
           - path: "scripts/football_api"
           - path: "airflow/dags/"
-          - path: "footgraph/"
+          - path: "data_backend/"
 
     steps:
       - uses: actions/checkout@v4
@@ -68,7 +68,7 @@ jobs:
       matrix:
         target:
           - path: "scripts/football_api/tests"
-          - path: "footgraph/tests"
+          - path: "data_backend/tests"
 
     steps:
       - uses: actions/checkout@v4
