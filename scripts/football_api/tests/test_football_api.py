@@ -1,7 +1,7 @@
 from unittest import mock
 import pytest
 
-from football_api.football_api import main, run_download_football_api
+from scripts.football_api.football_api import main, run_download_football_api
 
 
 @pytest.fixture

@@ -81,4 +81,4 @@ jobs:
           cache-dependency-glob: "**/pyproject.toml"
 
       - name: Run pytest
-        run: PYTHONPATH=${{ matrix.target.path }} uv run pytest ${{ matrix.target.path }}/tests
+        run: uv run pytest ${{ matrix.target.path }}/tests
