@@ -3,7 +3,6 @@ from unittest import mock
 from unittest.mock import MagicMock
 from data_backend.aws import S3Client
 import pytest
-import boto3
 
 
 @pytest.fixture

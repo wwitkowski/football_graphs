@@ -37,8 +37,8 @@ jobs:
       matrix:
         target:
           - path: "scripts/football_api"
-          - path: "airflow/dags/"
-          - path: "data_backend/"
+          - path: "airflow/dags"
+          - path: "data_backend"
 
     steps:
       - uses: actions/checkout@v4
@@ -81,4 +81,4 @@ jobs:
           cache-dependency-glob: "**/pyproject.toml"
 
       - name: Run pytest
-        run: PYTHONPATH=${{ matrix.target.path }} uv run pytest tests
+        run: PYTHONPATH=${{ matrix.target.path }} uv run pytest ${{ matrix.target.path }}/tests
