@@ -212,7 +212,7 @@ def test_run_download_football_api(
         assert args.args == expected_args
 
 
-@mock.patch("football_api.football_api.run_download_football_api")
+@mock.patch("scripts.football_api.football_api.run_download_football_api")
 def test_main(mock_run_download_football_api):
     date = "2024-01-01"
     main([date])
