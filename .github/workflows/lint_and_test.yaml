@@ -81,4 +81,6 @@ jobs:
           cache-dependency-glob: "**/pyproject.toml"
 
       - name: Run pytest
+        env:
+          PYTHONPATH: ${{ github.workspace }}
         run: uv run pytest ${{ matrix.target.path }}/tests
