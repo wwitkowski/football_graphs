@@ -18,3 +18,6 @@ members = ["data_backend"]
 
 [tool.uv.sources]
 data-backend = { workspace = true }
+
+[tool.mypy]
+ignore_missing_imports = true
