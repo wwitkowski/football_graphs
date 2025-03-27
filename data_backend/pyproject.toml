@@ -1,23 +1,25 @@
 [project]
-name = "football_graphs"
+name = "data-backend"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
+authors = [
+    { name = "wwitkowski", email = "wojciechwitkowski94@gmail.com" }
+]
 requires-python = ">=3.12"
 dependencies = [
-    "data-backend",
+    "boto3>=1.37.18",
+    "requests>=2.32.3",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
     "pytest>=8.3.5",
 ]
-
-[tool.uv.workspace]
-members = ["data_backend"]
-
-[tool.uv.sources]
-data-backend = { workspace = true }
 
 [tool.mypy]
 ignore_missing_imports = true
