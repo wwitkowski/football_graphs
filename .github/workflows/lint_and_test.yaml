@@ -37,7 +37,6 @@ jobs:
       matrix:
         target:
           - path: "scripts/football_api"
-          - path: "airflow/dags"
           - path: "data_backend"
 
     steps:

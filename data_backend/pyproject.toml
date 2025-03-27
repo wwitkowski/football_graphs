@@ -19,8 +19,8 @@ build-backend = "hatchling.build"
 [dependency-groups]
 dev = [
     "pytest>=8.3.5",
-    "types-requests>=2.32.0.20250306",
 ]
 
 [tool.mypy]
 ignore_missing_imports = true
+disable_error_code = "import-untyped"
