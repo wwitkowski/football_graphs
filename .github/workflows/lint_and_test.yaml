@@ -38,6 +38,7 @@ jobs:
         target:
           - path: "scripts/football_api"
           - path: "data_backend"
+          - path: "airflow/dags"
 
     steps:
       - uses: actions/checkout@v4
@@ -68,6 +69,7 @@ jobs:
         target:
           - path: "scripts/football_api"
           - path: "data_backend"
+          - path: "airflow"
 
     steps:
       - uses: actions/checkout@v4

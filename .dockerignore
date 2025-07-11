@@ -1,0 +1,29 @@
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# pytest and mypy cache
+.mypy_cache/
+**/.mypy_cache/
+.pytest_cache/
+**/.pytest_cache/
+
+# Virtual environment
+venv/
+.env/
+
+# Editor and OS-generated files
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+**/tests/

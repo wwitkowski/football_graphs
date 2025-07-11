@@ -21,7 +21,7 @@ x-airflow-common:
     - /var/run/docker.sock:/var/run/docker.sock
   user: "${AIRFLOW_UID:-50000}:0"
   networks:
-    - airflow-net
+    - project-net
   depends_on:
     &airflow-common-depends-on
     postgres:
@@ -37,7 +37,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - airflow-net
+      - project-net
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "airflow"]
       interval: 50s
@@ -57,11 +57,18 @@ services:
     volumes:
       - minio_data:/data
     networks:
-      - airflow-net
+      - project-net
     deploy:
       resources:
         limits:
           memory: 256MB
+  
+  data_backend:
+    image: data_backend:latest
+    build:
+      context: .
+    networks:
+      - project-net
 
   airflow-webserver:
     <<: *airflow-common
@@ -120,4 +127,4 @@ volumes:
   minio_data:
 
 networks:
-  airflow-net:
+  project-net:

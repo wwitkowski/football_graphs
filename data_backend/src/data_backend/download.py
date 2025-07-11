@@ -49,11 +49,10 @@ class APIDownloader:
 
         try:
             response = requests.get(url, **kwargs)
+            self.request_count += 1
             response.raise_for_status()
         except requests.exceptions.RequestException as e:
             raise APIRequestException(f"Failed to download {url}: {e}") from e
-
-        self.request_count += 1
 
         if self.rate_limit is not None:
             time.sleep(self.rate_limit.sleep)
