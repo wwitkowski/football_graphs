@@ -9,17 +9,8 @@ jobs:
   setup:
     name: Setup Environment
     runs-on: ubuntu-latest
-    env:
-      UV_CACHE_DISABLE: "1" 
-    outputs:
-      cache-key: ${{ steps.cache-key.outputs.key }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Clear uv cache (belt + suspenders)
-        run: |
-          rm -rf ~/.cache/uv
-          rm -rf /home/runner/work/_temp/setup-uv-cache
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -34,7 +25,10 @@ jobs:
           python-version-file: ".python-version"
 
       - name: Install the project
-        run: uv sync --group airflow --dev
+        run: uv sync --group airflow --dev --refresh
+
+      - name: Minimize uv cache
+        run: uv cache prune --ci
 
   lint:
     name: Run Lint
