@@ -1,5 +1,6 @@
 import os
-from airflow import DAG
+
+from airflow.models.dag import DAG
 from airflow.providers.docker.operators.docker import DockerOperator
 import pendulum
 

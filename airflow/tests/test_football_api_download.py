@@ -1,6 +1,6 @@
 from pathlib import Path
 import pytest
-from airflow.models import DagBag
+from airflow.models.dagbag import DagBag
 from airflow.providers.docker.operators.docker import DockerOperator
 
 
