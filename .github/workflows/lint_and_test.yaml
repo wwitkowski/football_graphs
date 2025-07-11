@@ -9,16 +9,23 @@ jobs:
   setup:
     name: Setup Environment
     runs-on: ubuntu-latest
+    env:
+      UV_CACHE_DISABLE: "1" 
     outputs:
       cache-key: ${{ steps.cache-key.outputs.key }}
     steps:
       - uses: actions/checkout@v4
 
+      - name: Clear uv cache (belt + suspenders)
+        run: |
+          rm -rf ~/.cache/uv
+          rm -rf /home/runner/work/_temp/setup-uv-cache
+
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
           version: "0.6.6"
-          enable-cache: false
+          enable-cache: true
           cache-dependency-glob: "pyproject.toml"
 
       - name: "Set up Python"
@@ -47,7 +54,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           version: "0.6.6"
-          enable-cache: false
+          enable-cache: true
           cache-dependency-glob: "pyproject.toml"
 
       - name: Run ruff
@@ -78,7 +85,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           version: "0.6.6"
-          enable-cache: false
+          enable-cache: true
           cache-dependency-glob: "pyproject.toml"
 
       - name: Run pytest
