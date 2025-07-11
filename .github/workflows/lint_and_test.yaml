@@ -27,7 +27,7 @@ jobs:
           python-version-file: ".python-version"
 
       - name: Install the project
-        run: uv sync --airflow --dev
+        run: uv sync --group airflow --dev
 
   lint:
     name: Run Lint
