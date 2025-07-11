@@ -1,0 +1,32 @@
+name: lint
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    name: Run Lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - path: "scripts/football_api"
+          - path: "data_backend"
+          - path: "airflow/dags"
+
+    steps:
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+
+      - name: Install dependencies
+        run: |
+          uv tool install ruff
+          uv tool install mypy
+
+      - name: Run ruff
+        run: uv run ruff check ${{ matrix.target.path }}
+
+      - name: Run mypy
+        run: uv run mypy --explicit-package-bases ${{ matrix.target.path }}
