@@ -25,7 +25,7 @@ jobs:
           python-version-file: ".python-version"
 
       - name: Install the project
-        run: uv sync --group airflow --dev --refresh
+        run: uv sync --group airflow --dev
 
       - name: Minimize uv cache
         run: uv cache prune --ci
@@ -81,6 +81,9 @@ jobs:
           version: "0.6.6"
           enable-cache: true
           cache-dependency-glob: "pyproject.toml"
+      
+      - name: Install dependecies
+        run: uv sync --group airflow --dev
 
       - name: Run pytest
         env:
