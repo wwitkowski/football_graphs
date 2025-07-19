@@ -1,7 +1,7 @@
 [project]
 name = "data-backend"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.1.1"
+description = "Data operations"
 readme = "README.md"
 authors = [
     { name = "wwitkowski", email = "wojciechwitkowski94@gmail.com" }

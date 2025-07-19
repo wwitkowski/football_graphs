@@ -653,7 +653,7 @@ wheels = [
 
 [[package]]
 name = "data-backend"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "data_backend" }
 dependencies = [
     { name = "boto3" },
