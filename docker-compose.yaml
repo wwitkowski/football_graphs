@@ -1,12 +1,10 @@
 version: "3.8"
 
-x-airflow-common:
-  &airflow-common
+x-airflow-common: &airflow-common
   image: apache/airflow:2.10.5
-  environment:
-    &airflow-common-env
+  environment: &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/${POSTGRES_DB}
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@postgres/${POSTGRES_DB}
     AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
@@ -17,13 +15,12 @@ x-airflow-common:
     AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL: 60
   volumes:
     - ./airflow/dags:/opt/airflow/dags
-    - ./airflow//logs:/opt/airflow/logs
+    - ./airflow/logs:/opt/airflow/logs
     - /var/run/docker.sock:/var/run/docker.sock
   user: "${AIRFLOW_UID:-50000}:0"
   networks:
-    - airflow-net
-  depends_on:
-    &airflow-common-depends-on
+    - project-net
+  depends_on: &airflow-common-depends-on
     postgres:
       condition: service_healthy
 
@@ -34,12 +31,14 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./postgres_data:/var/lib/postgresql/data
     networks:
-      - airflow-net
+      - project-net
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "airflow"]
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}"]
       interval: 50s
       retries: 5
       start_period: 5s
@@ -55,13 +54,18 @@ services:
       MINIO_ROOT_USER: ${MINIO_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
     volumes:
-      - minio_data:/data
+      - ./minio_data:/data
     networks:
-      - airflow-net
+      - project-net
     deploy:
       resources:
         limits:
           memory: 256MB
+
+  data_backend:
+    image: ghcr.io/${REPO_OWNER}/data_backend:${BACKEND_TAG:-latest}
+    networks:
+      - project-net
 
   airflow-webserver:
     <<: *airflow-common
@@ -94,7 +98,29 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
-  
+
+  psql-init:
+    image: postgres:13-alpine
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./postgres/init.sh:/init.sh:ro
+    entrypoint: /bin/sh
+    command: /init.sh
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      AIRFLOW_DB_USER: ${AIRFLOW_DB_USER}
+      AIRFLOW_DB_PASSWORD: ${AIRFLOW_DB_PASSWORD}
+      FOOTGRAPH_DB: ${FOOTGRAPH_DB}
+      FOOTGRAPH_DB_USER: ${FOOTGRAPH_DB_USER}
+      FOOTGRAPH_DB_PASSWORD: ${FOOTGRAPH_DB_PASSWORD}
+    networks:
+      - project-net
+    restart: "no"
+
   airflow-init:
     <<: *airflow-common
     entrypoint: /bin/bash
@@ -114,10 +140,14 @@ services:
     user: "0:0"
     volumes:
       - ./airflow:/sources
+    depends_on:
+      <<: *airflow-common-depends-on
+      psql-init:
+        condition: service_completed_successfully
 
 volumes:
   postgres_data:
   minio_data:
 
 networks:
-  airflow-net:
+  project-net:

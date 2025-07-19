@@ -12,11 +12,6 @@ def _parse_args(arg_list: list[str] | None):
     return args
 
 
-def main(arg_list: list[str] | None = None):
-    args = _parse_args(arg_list)
-    run_download_football_api(args.date)
-
-
 def run_download_football_api(date: str):
     api_client = FootballAPIClient(api_key=os.environ.get("API_FOOTBALL_KEY"))
     s3_client = S3Client(bucket="raw-data")
@@ -33,6 +28,11 @@ def run_download_football_api(date: str):
         ]:
             data = api_client.fetch(endpoint, {"fixture": fixture_id})
             s3_client.upload_json(data, f"{date}/{fixture_id}_{filename}.json")
+
+
+def main(arg_list: list[str] | None = None):
+    args = _parse_args(arg_list)
+    run_download_football_api(args.date)
 
 
 if __name__ == "__main__":
