@@ -17,8 +17,8 @@ jobs:
 
       - name: Pull images and deploy
         run: |
-          docker compose --env-file ../Secret/football_graphs/.env pull
-          docker compose --env-file ../Secret/football_graphs/.env up -d
+          docker compose --env-file /home/rpi_user/Projects/football_graphs/Secret/.env pull
+          docker compose --env-file /home/rpi_user/Projects/football_graphs/Secret/.env up -d
 
       - name: Prune old images
         run: docker image prune -af
