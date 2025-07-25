@@ -34,7 +34,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./postgres_data:/var/lib/postgresql/data
+      - ../../data/postgres_data:/var/lib/postgresql/data
     networks:
       - project-net
     healthcheck:
@@ -54,7 +54,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
     volumes:
-      - ./minio_data:/data
+      - ../../data/minio_data:/data
     networks:
       - project-net
     deploy:
