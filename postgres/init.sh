@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS requests (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP,
   created_by TEXT,
-  status TEXT DEFAULT pending CHECK (status IN ('Pending', 'Completed', 'Failed'))
+  status TEXT DEFAULT 'Pending' CHECK (status IN ('Pending', 'Completed', 'Failed'))
 );
 EOSQL
 
