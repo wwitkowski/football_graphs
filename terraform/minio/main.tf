@@ -8,7 +8,7 @@ terraform {
 }
 
 provider "minio" {
-  minio_server   = "localhost:9000"
+  minio_server   = var.minio_server
   minio_user     = var.minio_user
   minio_password = var.minio_password
 }
@@ -26,7 +26,7 @@ resource "minio_s3_bucket" "iceberg_data" {
 }
 
 
-# Load External Policy Files
+# Create Policies
 resource "minio_iam_policy" "raw_read_policy" {
   name   = "raw-read-policy"
   policy = file("${path.module}/policies/raw_read_policy.json")
@@ -80,23 +80,13 @@ resource "minio_iam_user_policy_attachment" "iceberg_write_attachment" {
 }
 
 
-# Outputs
-output "python_user_secret" {
-  value     = "${minio_iam_user.python_user.secret}"
-  sensitive = true
-}
-
-output "spark_user_secret" {
-  value     = "${minio_iam_user.spark_user.secret}"
-  sensitive = true
-}
-
+# Write secrets to local files
 resource "local_file" "python_user_secret" {
   content  = minio_iam_user.python_user.secret
-  filename = "/home/rpi_user/Projects/football_graphs/Secret/python_user_secret.txt"
+  filename = var.python_user_secret_file
 }
 
 resource "local_file" "spark_user_secret" {
   content  = minio_iam_user.spark_user.secret
-  filename = "/home/rpi_user/Projects/football_graphs/Secret/spark_user_secret.txt"
+  filename = var.spark_user_secret_file
 }
