@@ -31,7 +31,7 @@ jobs:
         run: terraform validate
 
       - name: Terraform Plan
-        run: terraform plan -out=tfplan.binary
+        run: terraform plan -out=tfplan.binary -var-file="/home/rpi_user/Projects/football_graphs/Secret/terrafrom.tfvars
 
       - name: Show Plan and Save to File
         run: terraform show -no-color tfplan.binary > tfplan.txt
