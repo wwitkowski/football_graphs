@@ -5,6 +5,10 @@ on:
     paths:
       - '**/*.tf'
 
+permissions:
+  pull-requests: write
+  issues: write
+
 jobs:
   terraform-plan:
     runs-on: self-hosted
