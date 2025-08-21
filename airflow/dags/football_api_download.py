@@ -17,7 +17,7 @@ with DAG(
     dag_id,
     default_args=default_args,
     schedule=None,
-    start_date=pendulum.datetime(2024, 4, 1),
+    start_date=pendulum.datetime(2025, 7, 18),
     catchup=True,
 ) as dag:
 
