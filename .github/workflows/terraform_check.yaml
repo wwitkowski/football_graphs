@@ -1,0 +1,40 @@
+name: Terraform PR Checks & Plan
+
+on:
+  pull_request:
+    paths:
+      - '**/*.tf'
+
+jobs:
+  terraform-plan:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Install tflint
+        run: |
+          curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+          export PATH=$PATH:$HOME/.tflint/bin
+          tflint --version
+
+      - name: Run tflint
+        run: tflint
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan.binary
+
+      - name: Show Plan and Save to File
+        run: terraform show -no-color tfplan.binary > tfplan.txt
+
+      - name: Comment plan on PR
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          path: tfplan.txt

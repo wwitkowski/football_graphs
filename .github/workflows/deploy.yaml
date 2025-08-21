@@ -28,5 +28,11 @@ jobs:
       - name: Deploy docker compose
         run: docker compose --env-file /home/rpi_user/Projects/football_graphs/Secret/.env up -d
 
+      - name: Terraform Init & Apply
+        working-directory: terraform
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
       - name: Prune old images
         run: docker image prune -af
