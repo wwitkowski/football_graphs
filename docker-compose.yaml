@@ -57,6 +57,7 @@ services:
       - ${PROJECT_DATA}/minio_data:/data
     networks:
       - project-net
+    restart: always
     deploy:
       resources:
         limits:
