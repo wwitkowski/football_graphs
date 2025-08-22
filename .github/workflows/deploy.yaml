@@ -22,10 +22,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
 
-      - name: Pull images and deploy
+      - name: Pull images
+        run: docker compose --env-file /home/rpi_user/Projects/football_graphs/Secret/.env pull
+          
+      - name: Deploy docker compose
+        run: docker compose --env-file /home/rpi_user/Projects/football_graphs/Secret/.env up -d
+
+      - name: Terraform Init & Apply
+        working-directory: terraform
         run: |
-          docker compose --env-file /home/rpi_user/Projects/football_graphs/Secret/.env pull
-          docker compose --env-file /home/rpi_user/Projects/football_graphs/Secret/.env up -d
+          terraform init
+          terraform apply -auto-approve -var-file="/home/rpi_user/Projects/football_graphs/Secret/terraform.tfvars"
 
       - name: Prune old images
         run: docker image prune -af

@@ -4,11 +4,14 @@
       {
         "Action": [
             "s3:GetBucketLocation",
-            "s3:GetObject"
-        
+            "s3:GetObject",
+            "s3:ListBucket"
         ],
         "Effect": "Allow",
-        "Resource": ["arn:aws:s3:::raw-data/*"]
+        "Resource": [
+            "arn:aws:s3:::raw-data",
+            "arn:aws:s3:::raw-data/*"
+        ]
       }
     ]
   }
