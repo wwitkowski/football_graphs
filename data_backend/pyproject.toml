@@ -1,6 +1,6 @@
 [project]
 name = "data-backend"
-version = "0.1.1"
+version = "0.2.0"
 description = "Data operations"
 readme = "README.md"
 authors = [
@@ -10,6 +10,7 @@ requires-python = ">=3.12"
 dependencies = [
     "boto3>=1.37.18",
     "requests>=2.32.3",
+    "sqlmodel>=0.0.11",
 ]
 
 [build-system]

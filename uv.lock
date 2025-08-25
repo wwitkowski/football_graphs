@@ -653,11 +653,12 @@ wheels = [
 
 [[package]]
 name = "data-backend"
-version = "0.1.1"
+version = "0.2.0"
 source = { editable = "data_backend" }
 dependencies = [
     { name = "boto3" },
     { name = "requests" },
+    { name = "sqlmodel" },
 ]
 
 [package.dev-dependencies]
@@ -669,6 +670,7 @@ dev = [
 requires-dist = [
     { name = "boto3", specifier = ">=1.37.18" },
     { name = "requests", specifier = ">=2.32.3" },
+    { name = "sqlmodel", specifier = ">=0.0.11" },
 ]
 
 [package.metadata.requires-dev]
@@ -890,7 +892,7 @@ wheels = [
 
 [[package]]
 name = "football-graphs"
-version = "0.1.2"
+version = "0.1.4"
 source = { virtual = "." }
 dependencies = [
     { name = "data-backend" },
@@ -1726,6 +1728,32 @@ wheels = [
 ]
 
 [[package]]
+name = "pydantic"
+version = "1.10.22"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9a/57/5996c63f0deec09e9e901a2b838247c97c6844999562eac4e435bcb83938/pydantic-1.10.22.tar.gz", hash = "sha256:ee1006cebd43a8e7158fb7190bb8f4e2da9649719bff65d0c287282ec38dec6d", size = 356771, upload-time = "2025-04-24T13:38:43.605Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f6/a3/ec66239ed7c9e90edfb85b23b6b18eb290ed7aa05f54837cdcb6a14faa98/pydantic-1.10.22-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:92d0f97828a075a71d9efc65cf75db5f149b4d79a38c89648a63d2932894d8c9", size = 2794865, upload-time = "2025-04-24T13:37:25.087Z" },
+    { url = "https://files.pythonhosted.org/packages/49/6a/99cf3fee612d93210c85f45a161e98c1c5b45b6dcadb21c9f1f838fa9e28/pydantic-1.10.22-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:6af5a2811b6b95b58b829aeac5996d465a5f0c7ed84bd871d603cf8646edf6ff", size = 2534212, upload-time = "2025-04-24T13:37:26.848Z" },
+    { url = "https://files.pythonhosted.org/packages/f1/e6/0f8882775cd9a60b221103ee7d6a89e10eb5a892d877c398df0da7140704/pydantic-1.10.22-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6cf06d8d40993e79af0ab2102ef5da77b9ddba51248e4cb27f9f3f591fbb096e", size = 2994027, upload-time = "2025-04-24T13:37:28.683Z" },
+    { url = "https://files.pythonhosted.org/packages/e7/a3/f20fdecbaa2a2721a6a8ee9e4f344d1f72bd7d56e679371c3f2be15eb8c8/pydantic-1.10.22-cp312-cp312-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:184b7865b171a6057ad97f4a17fbac81cec29bd103e996e7add3d16b0d95f609", size = 3036716, upload-time = "2025-04-24T13:37:30.547Z" },
+    { url = "https://files.pythonhosted.org/packages/1f/83/dab34436d830c38706685acc77219fc2a209fea2a2301a1b05a2865b28bf/pydantic-1.10.22-cp312-cp312-musllinux_1_2_i686.whl", hash = "sha256:923ad861677ab09d89be35d36111156063a7ebb44322cdb7b49266e1adaba4bb", size = 3171801, upload-time = "2025-04-24T13:37:32.474Z" },
+    { url = "https://files.pythonhosted.org/packages/1e/6e/b64deccb8a7304d584088972437ea3091e9d99d27a8e7bf2bd08e29ae84e/pydantic-1.10.22-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:82d9a3da1686443fb854c8d2ab9a473251f8f4cdd11b125522efb4d7c646e7bc", size = 3123560, upload-time = "2025-04-24T13:37:34.855Z" },
+    { url = "https://files.pythonhosted.org/packages/08/9a/90d1ab704329a7ae8666354be84b5327d655764003974364767c9d307d3a/pydantic-1.10.22-cp312-cp312-win_amd64.whl", hash = "sha256:1612604929af4c602694a7f3338b18039d402eb5ddfbf0db44f1ebfaf07f93e7", size = 2191378, upload-time = "2025-04-24T13:37:36.649Z" },
+    { url = "https://files.pythonhosted.org/packages/47/8f/67befe3607b342dd6eb80237134ebcc6e8db42138609306eaf2b30e1f273/pydantic-1.10.22-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:b259dc89c9abcd24bf42f31951fb46c62e904ccf4316393f317abeeecda39978", size = 2797042, upload-time = "2025-04-24T13:37:38.753Z" },
+    { url = "https://files.pythonhosted.org/packages/aa/91/bfde7d301f8e1c4cff949b3f1eb2c9b27bdd4b2368da0fe88e7350bbe4bc/pydantic-1.10.22-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:9238aa0964d80c0908d2f385e981add58faead4412ca80ef0fa352094c24e46d", size = 2538572, upload-time = "2025-04-24T13:37:41.653Z" },
+    { url = "https://files.pythonhosted.org/packages/d7/ce/1b0097ece420354df77d2f01c72278fb43770c8ed732d6b7a303c0c70875/pydantic-1.10.22-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6f8029f05b04080e3f1a550575a1bca747c0ea4be48e2d551473d47fd768fc1b", size = 2986271, upload-time = "2025-04-24T13:37:43.551Z" },
+    { url = "https://files.pythonhosted.org/packages/eb/4c/e257edfd5a0025a428aee7a2835e21b51c76a6b1c8994bcccb14d5721eea/pydantic-1.10.22-cp313-cp313-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:5c06918894f119e0431a36c9393bc7cceeb34d1feeb66670ef9b9ca48c073937", size = 3015617, upload-time = "2025-04-24T13:37:45.466Z" },
+    { url = "https://files.pythonhosted.org/packages/00/17/ecf46ff31fd62d382424a07ed60540d4479094204bebeebb6dea597e88c3/pydantic-1.10.22-cp313-cp313-musllinux_1_2_i686.whl", hash = "sha256:e205311649622ee8fc1ec9089bd2076823797f5cd2c1e3182dc0e12aab835b35", size = 3164222, upload-time = "2025-04-24T13:37:47.35Z" },
+    { url = "https://files.pythonhosted.org/packages/1a/47/2d55ec452c9a87347234bbbc70df268e1f081154b1851f0db89638558a1c/pydantic-1.10.22-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:815f0a73d5688d6dd0796a7edb9eca7071bfef961a7b33f91e618822ae7345b7", size = 3117572, upload-time = "2025-04-24T13:37:49.339Z" },
+    { url = "https://files.pythonhosted.org/packages/03/2f/30359a36245b029bec7e442dd780fc242c66e66ad7dd5b50af2dcfd41ff3/pydantic-1.10.22-cp313-cp313-win_amd64.whl", hash = "sha256:9dfce71d42a5cde10e78a469e3d986f656afc245ab1b97c7106036f088dd91f8", size = 2174666, upload-time = "2025-04-24T13:37:51.114Z" },
+    { url = "https://files.pythonhosted.org/packages/e9/e0/1ed151a56869be1588ad2d8cda9f8c1d95b16f74f09a7cea879ca9b63a8b/pydantic-1.10.22-py3-none-any.whl", hash = "sha256:343037d608bcbd34df937ac259708bfc83664dadf88afe8516c4f282d7d471a9", size = 166503, upload-time = "2025-04-24T13:38:41.374Z" },
+]
+
+[[package]]
 name = "pygments"
 version = "2.19.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2086,6 +2114,32 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/4d/bf/abfd5474cdd89ddd36dbbde9c6efba16bfa7f5448913eba946fed14729da/SQLAlchemy-Utils-0.41.2.tar.gz", hash = "sha256:bc599c8c3b3319e53ce6c5c3c471120bd325d0071fb6f38a10e924e3d07b9990", size = 138017, upload-time = "2024-03-24T15:17:28.196Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d5/f0/dc4757b83ac1ab853cf222df8535ed73973e0c203d983982ba7b8bc60508/SQLAlchemy_Utils-0.41.2-py3-none-any.whl", hash = "sha256:85cf3842da2bf060760f955f8467b87983fb2e30f1764fd0e24a48307dc8ec6e", size = 93083, upload-time = "2024-03-24T15:17:24.533Z" },
+]
+
+[[package]]
+name = "sqlalchemy2-stubs"
+version = "0.0.2a38"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/94/df/be9e0062f649fd2e9b9b73a98c250f520fa10beaebddb8948dffad23c3b6/sqlalchemy2-stubs-0.0.2a38.tar.gz", hash = "sha256:861d722abeb12f13eacd775a9f09379b11a5a9076f469ccd4099961b95800f9e", size = 123950, upload-time = "2023-12-30T12:15:29.27Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ee/ea/6eff437d0a26c894da2982429ed2c148ecaf0526349ddc8cda1e7151c171/sqlalchemy2_stubs-0.0.2a38-py3-none-any.whl", hash = "sha256:b62aa46943807287550e2033dafe07564b33b6a815fbaa3c144e396f9cc53bcb", size = 191786, upload-time = "2023-12-30T12:15:27.882Z" },
+]
+
+[[package]]
+name = "sqlmodel"
+version = "0.0.11"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "sqlalchemy" },
+    { name = "sqlalchemy2-stubs" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ed/c2/cea6067fa006f29780e56784172fd91472b54443b965a9131729d800997d/sqlmodel-0.0.11.tar.gz", hash = "sha256:fc33abbf7ec29caafabe3d0e1db61e33597857a289e5fd1ecdb91be702b26084", size = 21875, upload-time = "2023-10-29T09:58:28.132Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9f/d0/8938bcf1c2d5c1f2a4aadece26364996aef437dbc7d5fcfa87cd1e13f7c6/sqlmodel-0.0.11-py3-none-any.whl", hash = "sha256:bc0d64c4b901d919d2f16bbd79aefb07cb268c29f7c1dd83a84758772ccc95c6", size = 21933, upload-time = "2023-10-29T09:58:26.685Z" },
 ]
 
 [[package]]

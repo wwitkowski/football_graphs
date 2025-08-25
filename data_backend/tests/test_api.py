@@ -1,37 +1,46 @@
-from data_backend.api import FootballAPIClient
-from data_backend.download import APIDownloader
-import pytest
 from unittest.mock import MagicMock
 
-
-@pytest.fixture
-def mock_downloader():
-    mock = MagicMock(spec=APIDownloader)
-    return mock
+from data_backend.api import FootballAPIClient, get_db_session
 
 
-@pytest.fixture
-def football_api_client(mock_downloader):
-    client = FootballAPIClient(api_key="test_api_key")
-    client.downloader = mock_downloader
-    return client
+def test_client_initialization():
+    client = FootballAPIClient(api_key="test-key", db_url="sqlite:///:memory:")
+    assert client.headers["x-rapidapi-key"] == "test-key"
+    assert client.headers["x-rapidapi-host"] == "api-football-v1.p.rapidapi.com"
+    assert client.request_limit == 100
+    assert client.http_session.headers["x-rapidapi-key"] == "test-key"
 
 
-def test_fetch_success(football_api_client, mock_downloader):
+def test_get_session_yields_and_closes():
+    mock_session = MagicMock()
+
+    def fake_factory(db_url):
+        return mock_session
+
+    with get_db_session("sqlite:///:memory:", fake_factory) as session:
+        assert session == mock_session
+
+    mock_session.close.assert_called_once()
+
+
+def test_fetch_success():
+    mock_session = MagicMock()
+    mock_downloader = MagicMock()
     mock_response = MagicMock()
-    mock_response.json.return_value = {"success": True, "data": []}
+    mock_response.json.return_value = {"data": "ok"}
     mock_downloader.download.return_value = mock_response
 
-    endpoint = "teams"
-    params = {"league": "39", "season": "2021"}
-    response = football_api_client.fetch(endpoint, params)
-
-    mock_downloader.download.assert_called_once_with(
-        "https://api-football-v1.p.rapidapi.com/v3/teams",
-        headers={
-            "x-rapidapi-key": "test_api_key",
-            "x-rapidapi-host": "api-football-v1.p.rapidapi.com",
-        },
-        params=params,
+    client = FootballAPIClient(
+        api_key="test-key", 
+        db_url="sqlite:///:memory:", 
+        session_factory=lambda db_url: mock_session, 
+        downloader_cls=lambda *a, **kw: mock_downloader
     )
-    assert response == {"success": True, "data": []}
+
+    result = client.fetch("fixtures", {"league": "EPL"})
+
+    assert result == {"data": "ok"}
+    mock_downloader.download.assert_called_once_with(
+        "https://api-football-v1.p.rapidapi.com/v3/fixtures",
+        params={"league": "EPL"},
+    )
