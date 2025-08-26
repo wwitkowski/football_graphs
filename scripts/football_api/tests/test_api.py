@@ -1,6 +1,7 @@
+from unittest import mock
 from unittest.mock import MagicMock
 
-from data_backend.api import FootballAPIClient, get_db_session
+from scripts.football_api.api import FootballAPIClient
 
 
 def test_client_initialization():
@@ -11,30 +12,19 @@ def test_client_initialization():
     assert client.http_session.headers["x-rapidapi-key"] == "test-key"
 
 
-def test_get_session_yields_and_closes():
+@mock.patch("data_backend.api.get_db_session")
+def test_fetch_success(mock_get_db_session):
     mock_session = MagicMock()
-
-    def fake_factory(db_url):
-        return mock_session
-
-    with get_db_session("sqlite:///:memory:", fake_factory) as session:
-        assert session == mock_session
-
-    mock_session.close.assert_called_once()
-
-
-def test_fetch_success():
-    mock_session = MagicMock()
+    mock_get_db_session.return_value.__enter__.return_value = mock_session
     mock_downloader = MagicMock()
     mock_response = MagicMock()
     mock_response.json.return_value = {"data": "ok"}
     mock_downloader.download.return_value = mock_response
 
     client = FootballAPIClient(
-        api_key="test-key", 
-        db_url="sqlite:///:memory:", 
-        session_factory=lambda db_url: mock_session, 
-        downloader_cls=lambda *a, **kw: mock_downloader
+        api_key="test-key",
+        db_url="sqlite:///:memory:",
+        downloader_cls=lambda *a, **kw: mock_downloader,
     )
 
     result = client.fetch("fixtures", {"league": "EPL"})

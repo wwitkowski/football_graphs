@@ -1,8 +1,8 @@
 import argparse
 import os
 
-from data_backend.api import FootballAPIClient
 from data_backend.aws import S3Client
+from scripts.football_api.api import FootballAPIClient
 
 
 def _parse_args(arg_list: list[str] | None):

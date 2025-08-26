@@ -20,7 +20,6 @@ with DAG(
     start_date=pendulum.datetime(2025, 7, 18),
     catchup=True,
 ) as dag:
-
     run_docker_task = DockerOperator(
         task_id="download",
         image="python:3.9",

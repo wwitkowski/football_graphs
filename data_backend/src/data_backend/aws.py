@@ -1,9 +1,9 @@
-import os
-from typing import Any
-import boto3
 import json
-
+import os
 from io import BytesIO
+from typing import Any
+
+import boto3
 
 
 class S3Client:

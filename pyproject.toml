@@ -15,6 +15,7 @@ airflow = [
 ]
 dev = [
     "pytest>=8.3.5",
+    "pytest-cov>=6.2.1",
 ]
 
 [tool.uv.workspace]
@@ -26,3 +27,6 @@ data-backend = { workspace = true }
 [tool.mypy]
 ignore_missing_imports = true
 disable_error_code = "import-untyped"
+
+[tool.ruff.lint]
+select = ["F", "E", "I"]

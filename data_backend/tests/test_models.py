@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 
-from data_backend.models import Request, init_db
+from data_backend.models import Request
+
 
 def test_request_creation():
     req = Request(url="http://example.com", created_by="svc")
@@ -8,6 +9,7 @@ def test_request_creation():
     assert req.status == "Pending"
     assert req.created_by == "svc"
     assert req.created_at is None
+
 
 def test_request_get_today_count():
     mock_session = MagicMock()
