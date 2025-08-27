@@ -98,7 +98,7 @@ def test_request_tracker_begin_request():
     mock_session.commit.assert_called()
 
 
-@mock.patch("data_backend.download.Request.get_today_count")
+@mock.patch("data_backend.api.Request.get_today_count")
 def test_request_tracker_begin_request_limit_exceeded(mock_get_count):
     mock_session = MagicMock()
     mock_get_count.return_value = 1
@@ -119,7 +119,7 @@ def test_request_tracker_complete_request():
     mock_session.commit.assert_called()
 
 
-@mock.patch("data_backend.download.Request.get_today_count")
+@mock.patch("data_backend.api.Request.get_today_count")
 def test_apidownloader_init(mock_get_count):
     mock_db_session = MagicMock()
     mock_http_session = MagicMock()

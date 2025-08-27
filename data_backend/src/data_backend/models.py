@@ -6,7 +6,7 @@ from typing_extensions import Literal
 RequestStatus = Literal["Pending", "Succeeded", "Failed"]
 
 
-class Request(SQLModel, table=True): # type: ignore[call-arg]
+class Request(SQLModel, table=True):  # type: ignore[call-arg]
     __tablename__ = "requests"
 
     id: int | None = Field(default=None, primary_key=True)

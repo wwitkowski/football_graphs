@@ -964,12 +964,14 @@ version = "0.1.4"
 source = { virtual = "." }
 dependencies = [
     { name = "data-backend" },
+    { name = "pyyaml" },
 ]
 
 [package.dev-dependencies]
 airflow = [
     { name = "apache-airflow" },
     { name = "apache-airflow-providers-docker" },
+    { name = "pendulum" },
 ]
 dev = [
     { name = "pytest" },
@@ -977,12 +979,16 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "data-backend", editable = "data_backend" }]
+requires-dist = [
+    { name = "data-backend", editable = "data_backend" },
+    { name = "pyyaml", specifier = ">=6.0.2" },
+]
 
 [package.metadata.requires-dev]
 airflow = [
     { name = "apache-airflow", specifier = "==2.10.5" },
     { name = "apache-airflow-providers-docker", specifier = ">=4.2.1" },
+    { name = "pendulum", specifier = ">=3.0.0" },
 ]
 dev = [
     { name = "pytest", specifier = ">=8.3.5" },

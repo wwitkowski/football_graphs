@@ -12,7 +12,7 @@ def test_client_initialization():
     assert client.http_session.headers["x-rapidapi-key"] == "test-key"
 
 
-@mock.patch("data_backend.api.get_db_session")
+@mock.patch("data_backend.db.get_db_session")
 def test_fetch_success(mock_get_db_session):
     mock_session = MagicMock()
     mock_get_db_session.return_value.__enter__.return_value = mock_session

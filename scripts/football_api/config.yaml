@@ -1,0 +1,40 @@
+  leagues:
+    - 2     # UEFA Champions League
+    - 3     # UEFA Europa League
+    - 848   # UEFA Europa Conference League
+    - 39    # Premier League
+    - 40    # Championship
+    - 41    # League One
+    - 45    # FA Cup
+    - 46    # EFL Trophy
+    - 48    # League Cup
+    - 528   # Community Shield
+    # - 42  # League Two
+    - 135   # Serie A
+    - 136   # Serie B
+    - 137   # Coppa Italia
+    - 547   # Super Cup
+    - 78    # 1.Bundesliga
+    - 79    # 2.Bundesliga
+    - 81    # DFB Pokal
+    - 529   # Super Cup
+    - 61    # Ligue 1
+    - 66    # Coupe de France
+    - 65    # Coupe de la Ligue
+    - 526   # Trophée des Champions"
+    # - 62  # Ligue 2
+    - 140   # LaLiga
+    - 141   # 2 LaLiga
+    - 143   # Copa del Rey
+    - 556   # Super Cup
+    - 88    # Eredivisie
+    - 203   # Turkey Super Lig
+    - 94    # Liga Portugal
+    - 144   # Belgium
+    - 106   # Poland
+    # - 119   # Denmark
+    # - 71    # Brazil
+    # - 253   # USA
+    # - 128   # Argentina
+    # - 103   # Norway
+    # - 113   # Sweden

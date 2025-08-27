@@ -2,8 +2,8 @@ from typing import Any, Type
 
 import requests
 
-from data_backend.db import get_db_session
 from data_backend.api import APIDownloader
+from data_backend.db import get_db_session
 
 
 class FootballAPIClient:
