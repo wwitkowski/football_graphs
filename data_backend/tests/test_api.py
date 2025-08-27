@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 import requests
 
-from data_backend.download import (
+from data_backend.api import (
     APIDownloader,
     HTTPRequester,
     RateLimiter,
