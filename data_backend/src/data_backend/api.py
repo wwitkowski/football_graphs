@@ -13,6 +13,13 @@ from data_backend.models import Request, RequestStatus, RequestStatusEnum
 
 logger = logging.getLogger(__name__)
 
+class OnDownloadError(str, Enum):
+    RAISE = "raise"
+    CONTINUE = "continue"
+
+
+OnDownloadErrorType = Literal[OnDownloadError.RAISE, OnDownloadError.CONTINUE]
+
 
 class RateLimiter:
     """Converts an allowed event rate into a per-event sleep interval."""
@@ -100,14 +107,6 @@ class RequestTracker:
         self.session.commit()
 
 
-class OnDownloadError(str, Enum):
-    RAISE = "raise"
-    CONTINUE = "continue"
-
-
-OnDownloadErrorType = Literal[OnDownloadError.RAISE, OnDownloadError.CONTINUE]
-
-
 class APIDownloader:
     """Coordinates HTTP requests with DB tracking."""
 
@@ -128,7 +127,7 @@ class APIDownloader:
         self._queue.extend(requests)
 
     def download_next(
-        self, on_error: OnDownloadErrorType = "continue"
+        self, on_error: OnDownloadErrorType = OnDownloadError.CONTINUE
     ) -> Generator[requests.Response, None, None]:
         """Yield responses for requests in the internal queue, respecting limits."""
         while self._queue:
