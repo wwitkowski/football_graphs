@@ -15,7 +15,7 @@ x-airflow-common: &airflow-common
     AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL: 60
   volumes:
     - ./airflow/dags:/opt/airflow/dags
-    - ./airflow/logs:/opt/airflow/logs
+    - ${PROJECT_DATA}/Data/airflow/logs:/opt/airflow/logs
     - /var/run/docker.sock:/var/run/docker.sock
   user: "${AIRFLOW_UID:-50000}:0"
   networks:
@@ -35,7 +35,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ${PROJECT_DATA}/postgres_data:/var/lib/postgresql/data
+      - ${PROJECT_DATA}/Data/postgres_data:/var/lib/postgresql/data
     networks:
       - project-net
     healthcheck:
@@ -55,7 +55,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
     volumes:
-      - ${PROJECT_DATA}/minio_data:/data
+      - ${PROJECT_DATA}/Data/minio_data:/data
     networks:
       - project-net
     restart: always
@@ -63,16 +63,6 @@ services:
       resources:
         limits:
           memory: 256MB
-
-  data_backend:
-    image: ghcr.io/${REPO_OWNER}/data_backend:${BACKEND_TAG:-latest}
-    environment:
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      FOOTGRAPH_DB_USER: ${FOOTGRAPH_DB_USER}
-      FOOTGRAPH_DB_PASSWORD: ${FOOTGRAPH_DB_PASSWORD}
-      FOOTGRAPH_DB: ${FOOTGRAPH_DB}
-    networks:
-      - project-net
 
   airflow-webserver:
     <<: *airflow-common
@@ -136,7 +126,13 @@ services:
       - |
         mkdir -p /sources/logs /sources/dags /sources/plugins
         chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
+        airflow variables set REPO_OWNER "${REPO_OWNER}"
+        airflow variables set BACKEND_TAG "${BACKEND_TAG:-latest}"
         airflow variables set API_FOOTBALL_KEY "${API_FOOTBALL_KEY}"
+        airflow variables set FOOTGRAPH_DB_USER "${FOOTGRAPH_DB_USER}"
+        airflow variables set FOOTGRAPH_DB_PASSWORD "${FOOTGRAPH_DB_PASSWORD}"
+        airflow variables set FOOTGRAPH_DB "${FOOTGRAPH_DB}"
+        airflow variables set PROJECT_DATA "${PROJECT_DATA}"
         exec /entrypoint airflow version
     environment:
       <<: *airflow-common-env

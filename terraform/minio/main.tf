@@ -81,12 +81,20 @@ resource "minio_iam_user_policy_attachment" "iceberg_write_attachment" {
 
 
 # Write secrets to local files
-resource "local_file" "python_user_secret" {
-  content  = minio_iam_user.python_user.secret
+resource "local_file" "python_user_credentials" {
+  content = <<EOT
+[default]
+aws_access_key_id = ${minio_iam_user.python_user.name}
+aws_secret_access_key = ${minio_iam_user.python_user.secret}
+EOT
   filename = var.python_user_secret_file
 }
 
-resource "local_file" "spark_user_secret" {
-  content  = minio_iam_user.spark_user.secret
+resource "local_file" "spark_user_credentials" {
+  content = <<EOT
+[default]
+aws_access_key_id = ${minio_iam_user.spark_user.name}
+aws_secret_access_key = ${minio_iam_user.spark_user.secret}
+EOT
   filename = var.spark_user_secret_file
 }

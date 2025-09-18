@@ -1,6 +1,6 @@
 [project]
 name = "data-backend"
-version = "0.2.0"
+version = "0.2.1"
 description = "Data operations"
 readme = "README.md"
 authors = [

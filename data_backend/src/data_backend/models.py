@@ -1,9 +1,20 @@
-from datetime import date
+from datetime import datetime, timezone
+from enum import Enum
+from typing import Any
 
-from sqlmodel import Field, Session, SQLModel, func, select
+from sqlmodel import JSON, Field, SQLModel, String
 from typing_extensions import Literal
 
-RequestStatus = Literal["Pending", "Succeeded", "Failed"]
+
+class RequestStatusEnum(str, Enum):
+    PENDING = "Pending"
+    SUCCEEDED = "Succeeded"
+    FAILED = "Failed"
+
+
+RequestStatus = Literal[
+    RequestStatusEnum.PENDING, RequestStatusEnum.SUCCEEDED, RequestStatusEnum.FAILED
+]
 
 
 class Request(SQLModel, table=True):  # type: ignore[call-arg]
@@ -11,12 +22,9 @@ class Request(SQLModel, table=True):  # type: ignore[call-arg]
 
     id: int | None = Field(default=None, primary_key=True)
     url: str
-    status: str = Field(default="Pending")
-    created_by: str
-    created_at: date | None = None
-
-    @classmethod
-    def get_today_count(cls, session: Session) -> int:
-        today = date.today()
-        stmt = select(func.count()).where(cls.created_at == today)
-        return session.exec(stmt).one()
+    params: dict[str, Any] | None = Field(default=None, sa_type=JSON)
+    payload: dict[str, Any] | None = Field(default=None, sa_type=JSON)
+    request_metadata: dict[str, Any] | None = Field(default=None, sa_type=JSON)
+    status: RequestStatus = Field(default=RequestStatusEnum.PENDING, sa_type=String)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

@@ -717,7 +717,7 @@ wheels = [
 
 [[package]]
 name = "data-backend"
-version = "0.2.0"
+version = "0.2.1"
 source = { editable = "data_backend" }
 dependencies = [
     { name = "boto3" },
@@ -960,7 +960,7 @@ wheels = [
 
 [[package]]
 name = "football-graphs"
-version = "0.1.4"
+version = "0.1.5"
 source = { virtual = "." }
 dependencies = [
     { name = "data-backend" },
@@ -974,6 +974,7 @@ airflow = [
     { name = "pendulum" },
 ]
 dev = [
+    { name = "freezegun" },
     { name = "pytest" },
     { name = "pytest-cov" },
 ]
@@ -991,8 +992,22 @@ airflow = [
     { name = "pendulum", specifier = ">=3.0.0" },
 ]
 dev = [
+    { name = "freezegun", specifier = "==0.3.4" },
     { name = "pytest", specifier = ">=8.3.5" },
     { name = "pytest-cov", specifier = ">=6.2.1" },
+]
+
+[[package]]
+name = "freezegun"
+version = "0.3.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "python-dateutil" },
+    { name = "six" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f8/3a/b05189bd13b2bdf724d8e486ff245e1cbec21d54d6d0da54db59feeff0f9/freezegun-0.3.4.tar.gz", hash = "sha256:8d5eb5656c324125cce80e2e9ae572af6da997b7065b3bb6599c20f1b28dcf46", size = 42043, upload-time = "2015-06-24T01:44:22.364Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ed/ac/64b9d6b80a2c425428971b8333c05667b1f43126ea84e679676c14e1e160/freezegun-0.3.4-py2.py3-none-any.whl", hash = "sha256:d15d5daa22260891955d436899f94c8b80525daa895aec74c0afa5a25ac0230e", size = 5315, upload-time = "2015-06-24T01:44:25.686Z" },
 ]
 
 [[package]]

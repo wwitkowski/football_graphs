@@ -1,8 +1,12 @@
+from datetime import datetime, timezone
 from unittest import mock
 from unittest.mock import MagicMock
 
 import pytest
 import requests
+from freezegun import freeze_time
+from sqlalchemy import create_engine
+from sqlmodel import Session, SQLModel, select
 
 from data_backend.api import (
     APIDownloader,
@@ -10,8 +14,19 @@ from data_backend.api import (
     RateLimiter,
     RequestTracker,
 )
-from data_backend.exceptions import APIRequestException, RequestLimitExceeded
+from data_backend.exceptions import APIRequestException
 from data_backend.models import Request
+
+
+@pytest.fixture(scope="function")
+def session():
+    engine = create_engine("sqlite:///", connect_args={"check_same_thread": False})
+    SQLModel.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        yield session
+
+    SQLModel.metadata.drop_all(engine)
 
 
 @pytest.mark.parametrize(
@@ -82,103 +97,212 @@ def test_http_requester_http_error():
         requester.get("http://example.com")
 
 
-def test_request_tracker_begin_request():
-    mock_session = MagicMock()
-
-    tracker = RequestTracker(mock_session, service_name="svc")
-    req1 = tracker.begin_request("http://example.com")
-
-    assert isinstance(req1, Request)
-    assert req1.url == "http://example.com"
-    assert req1.created_by == "svc"
-    assert req1.status == "Pending"
+def test_request_tracker_init(session):
+    session.add_all(
+        [
+            Request(url="http://example.com/1", status="Pending"),
+            Request(url="http://example.com/2", status="Succeeded"),
+            Request(
+                url="http://example.com/old",
+                updated_at=datetime(2023, 1, 1, tzinfo=timezone.utc),
+                status="Succeeded",
+            ),
+        ]
+    )
+    session.commit()
+    tracker = RequestTracker(session, request_limit=10)
+    assert tracker.session == session
+    assert tracker.limit == 10
     assert tracker.request_count == 1
 
-    mock_session.add.assert_called_once_with(req1)
-    mock_session.commit.assert_called()
+
+def test_request_tracker_persist_request(session):
+    tracker = RequestTracker(session)
+    requests = [
+        Request(
+            url="http://example.com",
+        ),
+        Request(
+            url="http://example.org",
+            params={"q": "test"},
+        ),
+    ]
+    tracker.persist_requests(requests)
+    added_requests = session.exec(select(Request)).all()
+    assert requests == added_requests
 
 
-@mock.patch("data_backend.api.Request.get_today_count")
-def test_request_tracker_begin_request_limit_exceeded(mock_get_count):
-    mock_session = MagicMock()
-    mock_get_count.return_value = 1
+def test_request_tracker_get_pending_requests(session):
+    requests = [
+        Request(
+            url="http://example.com/1",
+            updated_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
+            status="Pending",
+        ),
+        Request(
+            url="http://example.com/2",
+            updated_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
+            status="Succeeded",
+        ),
+    ]
+    session.add_all(requests)
+    session.commit()
+    tracker = RequestTracker(session)
+    pending_requests = tracker.get_pending_requests()
+    assert len(pending_requests) == 1
+    assert pending_requests[0] == requests[0]
 
-    tracker = RequestTracker(mock_session, request_limit=1, service_name="svc")
 
-    with pytest.raises(RequestLimitExceeded):
-        tracker.begin_request("http://example.com")
-
-
-def test_request_tracker_complete_request():
-    mock_session = MagicMock()
-    tracker = RequestTracker(mock_session, service_name="svc")
-    req = Request(url="x", request_count=0, created_by="svc", status="Pending")
-
+@freeze_time("2025-01-02 12:00:00")
+def test_request_tracker_complete_request(session):
+    requests = [
+        Request(
+            url="http://example.com/1",
+            updated_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
+            status="Pending",
+        )
+    ]
+    session.add_all(requests)
+    session.commit()
+    tracker = RequestTracker(session)
+    req = session.exec(select(Request)).one()
     tracker.complete_request(req, status="Succeeded")
-    assert req.status == "Succeeded"
-    mock_session.commit.assert_called()
+
+    updated_req = session.exec(select(Request).where(Request.id == req.id)).one()
+    assert updated_req.status == "Succeeded"
+    assert updated_req.updated_at == datetime(2025, 1, 2, 12, 0)
 
 
-@mock.patch("data_backend.api.Request.get_today_count")
-def test_apidownloader_init(mock_get_count):
-    mock_db_session = MagicMock()
+def test_apidownloader_init(session):
     mock_http_session = MagicMock()
-    mock_get_count.return_value = 1
 
     downloader = APIDownloader(
-        mock_db_session,
-        service_name="svc",
-        request_limit=10,
+        session,
         http_session=mock_http_session,
+        request_limit=10,
         rate_limit=RateLimiter(5, "second"),
     )
     assert isinstance(downloader.tracker, RequestTracker)
     assert isinstance(downloader.requester, HTTPRequester)
-    assert downloader.tracker.session == mock_db_session
+    assert downloader.tracker.session == session
     assert downloader.tracker.limit == 10
-    assert downloader.tracker.service_name == "svc"
-    assert downloader.tracker.request_count == 1
+    assert downloader.tracker.request_count == 0
     assert downloader.requester.http_session == mock_http_session
     assert downloader.requester.rate_limit.events_per_unit == 5
     assert downloader.requester.rate_limit.unit == "second"
 
 
-def test_apidownloader_download_success():
-    mock_session = MagicMock()
-    downloader = APIDownloader(mock_session, service_name="svc")
+def test_apidownloader_add(session):
+    mock_http_session = MagicMock()
+    downloader = APIDownloader(session, http_session=mock_http_session)
+    req = Request(url="http://example.com")
+    downloader.add([req])
+    added_req = session.exec(select(Request).where(Request.id == req.id)).one()
+    assert added_req == req
+    assert req in downloader._queue
 
-    mock_request = MagicMock()
-    downloader.tracker.begin_request = MagicMock(return_value=mock_request)
+
+def test_apidownloader_download_next(session):
     mock_response = MagicMock()
-    downloader.requester.get = MagicMock(return_value=mock_response)
-    downloader.tracker.complete_request = MagicMock()
+    mock_response.raise_for_status.return_value = None
 
-    url = "http://example.com"
-    response = downloader.download(url, json={"key": "value"})
+    mock_http_session = MagicMock()
+    mock_http_session.get.return_value = mock_response
 
-    assert response == mock_response
-    downloader.tracker.begin_request.assert_called_once_with(url)
-    downloader.requester.get.assert_called_once_with(url, json={"key": "value"})
-    downloader.tracker.complete_request.assert_called_once_with(
-        mock_request, status="Succeeded"
+    downloader = APIDownloader(
+        session,
+        http_session=mock_http_session,
     )
 
+    req1 = Request(url="http://example.com/1")
+    req2 = Request(url="http://example.com/2")
+    downloader.add([req1, req2])
 
-def test_apidownloader_download_failure():
-    mock_session = MagicMock()
-    downloader = APIDownloader(mock_session, service_name="svc")
+    returned_objects = list(downloader.download_next())
+    assert len(returned_objects) == 2
+    assert returned_objects[0][0] == req1
+    assert returned_objects[0][1] == mock_response
+    assert returned_objects[1][0] == req2
+    assert returned_objects[1][1] == mock_response
 
-    mock_request = MagicMock()
-    downloader.tracker.begin_request = MagicMock(return_value=mock_request)
-    downloader.requester.get = MagicMock(side_effect=APIRequestException("boom"))
-    downloader.tracker.complete_request = MagicMock()
 
-    url = "http://example.com"
+def test_apidownloader_request_limit_exceeded(session):
+    mock_http_session = MagicMock()
+    downloader = APIDownloader(
+        session,
+        http_session=mock_http_session,
+        request_limit=1,
+    )
+
+    req1 = Request(url="http://example.com/1")
+    req2 = Request(url="http://example.com/2")
+    downloader.add([req1, req2])
+
+    assert len(list(downloader.download_next())) == 1
+
+
+def test_apidownloader_raise_on_error(session):
+    mock_http_session = MagicMock()
+    mock_http_session.get.side_effect = requests.exceptions.RequestException()
+
+    downloader = APIDownloader(
+        session,
+        http_session=mock_http_session,
+    )
+
+    req = Request(url="http://example.com")
+    downloader.add([req])
+
     with pytest.raises(APIRequestException):
-        downloader.download(url)
+        list(downloader.download_next(on_error="raise"))
 
-    downloader.tracker.begin_request.assert_called_once_with(url)
-    downloader.requester.get.assert_called_once_with(url)
-    downloader.tracker.complete_request.assert_called_once_with(
-        mock_request, status="Failed"
+    updated_req = session.exec(select(Request).where(Request.id == req.id)).one()
+    assert updated_req.status == "Failed"
+
+
+def test_apidownloader_continue_on_error(session):
+    mock_http_session = MagicMock()
+    mock_http_session.get.side_effect = requests.exceptions.RequestException()
+
+    downloader = APIDownloader(
+        session,
+        http_session=mock_http_session,
     )
+
+    req1 = Request(url="http://example.com/1")
+    req2 = Request(url="http://example.com/2")
+    downloader.add([req1, req2])
+
+    results = list(downloader.download_next(on_error="continue"))
+    assert results == []
+
+    updated_req1 = session.exec(select(Request).where(Request.id == req1.id)).one()
+    updated_req2 = session.exec(select(Request).where(Request.id == req2.id)).one()
+    assert updated_req1.status == "Failed"
+    assert updated_req2.status == "Failed"
+
+
+def test_apidownloader_request_count_w_exceptions(session):
+    mock_http_session = MagicMock()
+    mock_response = MagicMock()
+    mock_response.raise_for_status.side_effect = [
+        None,
+        requests.exceptions.RequestException(),
+        None,
+    ]
+    mock_http_session.get.return_value = mock_response
+
+    downloader = APIDownloader(
+        session,
+        http_session=mock_http_session,
+        request_limit=3,
+    )
+
+    req1 = Request(url="http://example.com/1")
+    req2 = Request(url="http://example.com/2")
+    req3 = Request(url="http://example.com/3")
+    downloader.add([req1, req2, req3])
+
+    list(downloader.download_next(on_error="continue"))
+
+    assert downloader.tracker.request_count == 3
