@@ -2,9 +2,9 @@ import os
 from unittest import mock
 
 import pytest
+from data_backend.models import Request
 from freezegun import freeze_time
 
-from data_backend.models import Request
 from scripts.football_api.football_api import (
     BASE_URL,
     handle_schedule_response,

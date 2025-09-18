@@ -3,7 +3,6 @@ import os
 from pathlib import Path
 
 import requests
-
 from data_backend.api import APIDownloader
 from data_backend.aws import S3Client
 from data_backend.config import get_config
