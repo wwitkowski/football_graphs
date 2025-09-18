@@ -3,6 +3,7 @@ import os
 import pendulum
 from docker.types import Mount
 from airflow.models import DAG, Variable
+from airflow.hooks.base import BaseHook
 from airflow.providers.docker.operators.docker import DockerOperator
 
 default_args = {
@@ -20,6 +21,8 @@ DB_USER = Variable.get("FOOTGRAPH_DB_USER")
 DB_PASSWORD = Variable.get("FOOTGRAPH_DB_PASSWORD")
 DB_NAME = Variable.get("FOOTGRAPH_DB")
 PROJECT_DATA = Variable.get("PROJECT_DATA")
+
+db_conn = BaseHook.get_connection('footgraph_db')
 
 with DAG(
     dag_id,
@@ -45,10 +48,10 @@ with DAG(
             )
         ],
         environment={
-            "POSTGRES_HOST": "postgres",
-            "FOOTGRAPH_DB_USER": DB_USER,
-            "FOOTGRAPH_DB_PASSWORD": DB_PASSWORD,
-            "FOOTGRAPH_DB": DB_NAME,
+            "POSTGRES_HOST": db_conn.host,
+            "POSTGRES_USER": db_conn.login,
+            "POSTGRES_PASSWORD": db_conn.password,
+            "POSTGRES_DB": db_conn.schema,
             "API_FOOTBALL_KEY": API_KEY
         }
     )

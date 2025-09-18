@@ -126,12 +126,15 @@ services:
       - |
         mkdir -p /sources/logs /sources/dags /sources/plugins
         chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
+        airflow connections add 'footgraph_db' \
+          --conn-type 'postgres' \
+          --conn-host "${POSTGRES_HOST}" \
+          --conn-schema "${FOOTGRAPH_DB}" \
+          --conn-login "${FOOTGRAPH_DB_USER}" \
+          --conn-password "${FOOTGRAPH_DB_PASSWORD}"
         airflow variables set REPO_OWNER "${REPO_OWNER}"
         airflow variables set BACKEND_TAG "${BACKEND_TAG:-latest}"
         airflow variables set API_FOOTBALL_KEY "${API_FOOTBALL_KEY}"
-        airflow variables set FOOTGRAPH_DB_USER "${FOOTGRAPH_DB_USER}"
-        airflow variables set FOOTGRAPH_DB_PASSWORD "${FOOTGRAPH_DB_PASSWORD}"
-        airflow variables set FOOTGRAPH_DB "${FOOTGRAPH_DB}"
         airflow variables set PROJECT_DATA "${PROJECT_DATA}"
         exec /entrypoint airflow version
     environment:
