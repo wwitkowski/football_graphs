@@ -2,8 +2,9 @@ import os
 
 import pendulum
 from docker.types import Mount
-from airflow.models import DAG, Variable
+
 from airflow.hooks.base import BaseHook
+from airflow.models import DAG, Variable
 from airflow.providers.docker.operators.docker import DockerOperator
 
 default_args = {
@@ -17,9 +18,6 @@ dag_id = os.path.basename(__file__).replace(".py", "")
 REPO_OWNER = Variable.get("REPO_OWNER")
 BACKEND_TAG = Variable.get("BACKEND_TAG", default_var="latest")
 API_KEY = Variable.get("API_FOOTBALL_KEY")
-DB_USER = Variable.get("FOOTGRAPH_DB_USER")
-DB_PASSWORD = Variable.get("FOOTGRAPH_DB_PASSWORD")
-DB_NAME = Variable.get("FOOTGRAPH_DB")
 PROJECT_DATA = Variable.get("PROJECT_DATA")
 
 db_conn = BaseHook.get_connection('footgraph_db')
