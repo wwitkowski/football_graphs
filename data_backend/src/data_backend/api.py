@@ -1,15 +1,15 @@
-from enum import Enum
+import logging
 import time
 from collections import deque
 from datetime import date, datetime, timezone
+from enum import Enum
 from typing import Generator, Literal
-import logging
+
 import requests
 from sqlmodel import Session, func, select
 
 from data_backend.exceptions import APIRequestException
 from data_backend.models import Request, RequestStatus, RequestStatusEnum
-
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +104,7 @@ class OnDownloadError(str, Enum):
     RAISE = "raise"
     CONTINUE = "continue"
 
+
 OnDownloadErrorType = Literal[OnDownloadError.RAISE, OnDownloadError.CONTINUE]
 
 
@@ -126,7 +127,9 @@ class APIDownloader:
         self.tracker.persist_requests(requests)
         self._queue.extend(requests)
 
-    def download_next(self, on_error: OnDownloadErrorType = "continue") -> Generator[requests.Response, None, None]:
+    def download_next(
+        self, on_error: OnDownloadErrorType = "continue"
+    ) -> Generator[requests.Response, None, None]:
         """Yield responses for requests in the internal queue, respecting limits."""
         while self._queue:
             request = self._queue.popleft()
@@ -135,9 +138,7 @@ class APIDownloader:
                 self.tracker.limit is not None
                 and self.tracker.request_count >= self.tracker.limit
             ):
-                logger.exception(
-                    f"Request limit of {self.tracker.limit} reached."
-                )
+                logger.exception(f"Request limit of {self.tracker.limit} reached.")
                 return
 
             try:
