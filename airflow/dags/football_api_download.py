@@ -1,11 +1,10 @@
 import os
 
 import pendulum
-from docker.types import Mount
-
 from airflow.hooks.base import BaseHook
 from airflow.models import DAG, Variable
 from airflow.providers.docker.operators.docker import DockerOperator
+from docker.types import Mount
 
 default_args = {
     "owner": "airflow",
