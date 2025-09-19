@@ -24,7 +24,7 @@ jobs:
 
       - name: Pull images
         run: |
-          docker pull ghcr.io/${{ github.repository_owner }}/data-backend:latest
+          docker pull ghcr.io/${{ github.repository_owner }}/data_backend:latest
           docker compose --env-file /home/rpi_user/Projects/football_graphs/Secret/.env pull
           
       - name: Deploy docker compose
