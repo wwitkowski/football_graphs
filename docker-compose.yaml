@@ -15,7 +15,7 @@ x-airflow-common: &airflow-common
     - ./airflow/dags:/opt/airflow/dags
     - ${PROJECT_DATA}/Data/airflow/logs:/opt/airflow/logs
     - /var/run/docker.sock:/var/run/docker.sock
-  user: "${AIRFLOW_UID:-50000}:0"
+  user: "${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-991}"
   networks:
     - project-net
   depends_on: &airflow-common-depends-on
