@@ -28,4 +28,4 @@ jobs:
       - name: Run pytest
         env:
           PYTHONPATH: ${{ github.workspace }}
-        run: uv run pytest ${{ matrix.target.path }}/tests
+        run: uv run pytest ${{ matrix.target.path }}/tests --cov=${{ matrix.target.path }} --cov-report=term-missing

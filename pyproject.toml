@@ -1,20 +1,24 @@
 [project]
 name = "football_graphs"
-version = "0.1.2"
+version = "0.1.5"
 description = "Football stats and graphs"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "data-backend",
+    "pyyaml>=6.0.2",
 ]
 
 [dependency-groups]
 airflow = [
     "apache-airflow==2.10.5",
     "apache-airflow-providers-docker>=4.2.1",
+    "pendulum>=3.0.0",
 ]
 dev = [
     "pytest>=8.3.5",
+    "pytest-cov>=6.2.1",
+    "freezegun==0.3.4"
 ]
 
 [tool.uv.workspace]
@@ -26,3 +30,6 @@ data-backend = { workspace = true }
 [tool.mypy]
 ignore_missing_imports = true
 disable_error_code = "import-untyped"
+
+[tool.ruff.lint]
+select = ["F", "E", "I"]

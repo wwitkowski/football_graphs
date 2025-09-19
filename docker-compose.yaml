@@ -4,7 +4,7 @@ x-airflow-common: &airflow-common
   image: apache/airflow:2.10.5
   environment: &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@postgres/${POSTGRES_DB}
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@${POSTGRES_HOST}/${POSTGRES_DB}
     AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
@@ -15,7 +15,7 @@ x-airflow-common: &airflow-common
     AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL: 60
   volumes:
     - ./airflow/dags:/opt/airflow/dags
-    - ./airflow/logs:/opt/airflow/logs
+    - ${PROJECT_DATA}/Data/airflow/logs:/opt/airflow/logs
     - /var/run/docker.sock:/var/run/docker.sock
   user: "${AIRFLOW_UID:-50000}:0"
   networks:
@@ -31,10 +31,11 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: ${POSTGRES_HOST}
     ports:
       - "5432:5432"
     volumes:
-      - ${PROJECT_DATA}/postgres_data:/var/lib/postgresql/data
+      - ${PROJECT_DATA}/Data/postgres_data:/var/lib/postgresql/data
     networks:
       - project-net
     healthcheck:
@@ -54,7 +55,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
     volumes:
-      - ${PROJECT_DATA}/minio_data:/data
+      - ${PROJECT_DATA}/Data/minio_data:/data
     networks:
       - project-net
     restart: always
@@ -62,11 +63,6 @@ services:
       resources:
         limits:
           memory: 256MB
-
-  data_backend:
-    image: ghcr.io/${REPO_OWNER}/data_backend:${BACKEND_TAG:-latest}
-    networks:
-      - project-net
 
   airflow-webserver:
     <<: *airflow-common
@@ -130,7 +126,16 @@ services:
       - |
         mkdir -p /sources/logs /sources/dags /sources/plugins
         chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
+        airflow connections add 'footgraph_db' \
+          --conn-type 'postgres' \
+          --conn-host "${POSTGRES_HOST}" \
+          --conn-schema "${FOOTGRAPH_DB}" \
+          --conn-login "${FOOTGRAPH_DB_USER}" \
+          --conn-password "${FOOTGRAPH_DB_PASSWORD}"
+        airflow variables set REPO_OWNER "${REPO_OWNER}"
+        airflow variables set BACKEND_TAG "${BACKEND_TAG:-latest}"
         airflow variables set API_FOOTBALL_KEY "${API_FOOTBALL_KEY}"
+        airflow variables set PROJECT_DATA "${PROJECT_DATA}"
         exec /entrypoint airflow version
     environment:
       <<: *airflow-common-env

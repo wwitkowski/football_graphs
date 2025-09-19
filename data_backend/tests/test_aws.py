@@ -1,8 +1,10 @@
 import json
 from unittest import mock
 from unittest.mock import MagicMock
-from data_backend.aws import S3Client
+
 import pytest
+
+from data_backend.aws import S3Client
 
 
 @pytest.fixture

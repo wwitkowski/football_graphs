@@ -58,11 +58,13 @@ PGPASSWORD=$FOOTGRAPH_DB_PASSWORD psql -h postgres -U "$FOOTGRAPH_DB_USER" -d "$
 CREATE TABLE IF NOT EXISTS requests (
   id SERIAL PRIMARY KEY,
   url TEXT NOT NULL,
-  request_count INTEGER NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  params JSONB,
+  payload JSONB,
+  metadata JSONB,
+  created_at TIMESTAMP NOT NULL,
+  created_by TEXT NOT NULL,
   updated_at TIMESTAMP,
-  created_by TEXT,
-  status TEXT DEFAULT 'Pending' CHECK (status IN ('Pending', 'Completed', 'Failed'))
+  status TEXT DEFAULT 'Pending' CHECK (status IN ('Pending', 'Succeeded', 'Failed'))
 );
 EOSQL
 
