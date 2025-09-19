@@ -12,7 +12,7 @@ x-airflow-common: &airflow-common
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
     AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL: 60
   volumes:
-    - ./airflow/dags:/opt/airflow/dags
+    - ./airflow/dags:/opt/airflow/dags:ro
     - ${PROJECT_DATA}/Data/airflow/logs:/opt/airflow/logs
     - /var/run/docker.sock:/var/run/docker.sock
   user: "${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-991}"
