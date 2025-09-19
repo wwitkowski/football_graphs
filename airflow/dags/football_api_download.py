@@ -39,7 +39,7 @@ with DAG(
         mounts=[
             Mount(
                 source=f"{PROJECT_DATA}/Secret/python_user",
-                target="/root/.aws/credentials",
+                target="/opt/airflow/.aws/credentials",
                 type="bind",
                 read_only=True
             )

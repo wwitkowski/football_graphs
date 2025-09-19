@@ -23,7 +23,9 @@ jobs:
           password: ${{ secrets.GHCR_TOKEN }}
 
       - name: Pull images
-        run: docker compose --env-file /home/rpi_user/Projects/football_graphs/Secret/.env pull
+        run: |
+          docker pull ghcr.io/${{ github.repository_owner }}/data-backend:latest
+          docker compose --env-file /home/rpi_user/Projects/football_graphs/Secret/.env pull
           
       - name: Deploy docker compose
         run: docker compose --env-file /home/rpi_user/Projects/football_graphs/Secret/.env up -d
