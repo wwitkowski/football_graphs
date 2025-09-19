@@ -28,7 +28,7 @@ jobs:
           docker compose --env-file /home/rpi_user/Projects/football_graphs/Secret/.env pull
           
       - name: Deploy docker compose
-        run: docker compose --env-file /home/rpi_user/Projects/football_graphs/Secret/.env up -d
+        run: docker compose --env-file /home/rpi_user/Projects/football_graphs/Secret/.env up -d --remove-orphans
 
       - name: Terraform Init & Apply
         working-directory: terraform
