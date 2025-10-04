@@ -53,19 +53,4 @@ else
   echo "Database '$FOOTGRAPH_DB' already exists."
 fi
 
-echo "Creating table in '$FOOTGRAPH_DB' as user '$FOOTGRAPH_DB_USER'..."
-PGPASSWORD=$FOOTGRAPH_DB_PASSWORD psql -h postgres -U "$FOOTGRAPH_DB_USER" -d "$FOOTGRAPH_DB" <<EOSQL
-CREATE TABLE IF NOT EXISTS requests (
-  id SERIAL PRIMARY KEY,
-  url TEXT NOT NULL,
-  params JSONB,
-  payload JSONB,
-  metadata JSONB,
-  created_at TIMESTAMP NOT NULL,
-  created_by TEXT NOT NULL,
-  updated_at TIMESTAMP,
-  status TEXT DEFAULT 'Pending' CHECK (status IN ('Pending', 'Succeeded', 'Failed'))
-);
-EOSQL
-
 echo 'DB initialization complete.'

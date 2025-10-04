@@ -7,7 +7,7 @@ from data_backend.api import APIDownloader
 from data_backend.aws import S3Client
 from data_backend.config import get_config
 from data_backend.db import get_db_session, get_db_url
-from data_backend.models import Request
+from data_backend.database.models import Request
 
 BASE_URL = "https://api-football-v1.p.rapidapi.com/v3"
 API_KEY = os.environ.get("API_FOOTBALL_KEY")
@@ -62,13 +62,57 @@ def handle_stats_response(data: dict, date: str, s3_client: S3Client) -> None:
 
 def run_download_football_api(date: str) -> None:
     """Workflow: schedule request -> fixture requests -> uploads."""
+
+    config = get_config(Path("scripts/config/football_api/config.yaml"))
+    allowed_league_ids = config.get("leagues", [])
+    
+    s3 = S3Client(bucket="raw-data")
+
     http_session = requests.Session()
     http_session.headers.update(
         {"x-rapidapi-key": API_KEY, "x-rapidapi-host": API_HOST}
     )
+    downlaoder = APIDownloader(http_session=http_session, request_limit=REQUEST_DAILY_LIMIT)
+
+    #########################################
+    def make_footballapi_downloader(api_key: str, api_host: str, request_limit: int):
+        def factory(session: requests.Session) -> APIDownloader:
+            session.headers.update({
+                "x-rapidapi-key": api_key,
+                "x-rapidapi-host": api_host,
+            })
+            return APIDownloader(session, request_limit=request_limit)
+        return factory
+
     config = get_config(Path("scripts/config/football_api/config.yaml"))
     allowed_league_ids = config.get("leagues", [])
-    s3 = S3Client(bucket="raw-data")
+
+    football_api_factory = make_footballapi_downloader(
+        api_key=API_KEY,
+        api_host=API_HOST,
+        request_limit=REQUEST_DAILY_LIMIT,
+    )
+
+    downloader = APIDownloader()
+    request = Request(
+        url=f"{BASE_URL}/fixtures",
+        params={"date": date},
+        type="schedule",
+    )
+    downloader.requests.add(request)
+    response = downloader.download_next():
+    for handler in HANDLERS[type(event)]:
+        parsed_response = handler(response)
+        downlaoder.save(response)
+        for new_request in downlaoder.collect_new_requests():
+            downlaoder.requests.add(**new_request)
+
+
+
+
+
+
+
 
     with get_db_session(get_db_url()) as db_session:
         downloader = APIDownloader(
@@ -76,7 +120,7 @@ def run_download_football_api(date: str) -> None:
         )
 
         schedule_request = Request(
-            endpoint=f"{BASE_URL}/fixtures",
+            url=f"{BASE_URL}/fixtures",
             params={"date": date},
             request_metadata={"type": "schedule", "date": date},
         )
@@ -91,3 +135,10 @@ def run_download_football_api(date: str) -> None:
                 downloader.add(new_requests)
             else:
                 handle_stats_response(data, req.request_metadata["date"], s3)
+
+
+
+
+
+
+

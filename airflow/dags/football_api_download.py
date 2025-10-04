@@ -35,7 +35,7 @@ with DAG(
         auto_remove="force",
         command="uv run python -m scripts.football_api.download_ongoing {{ ds }}",
         docker_url="unix://var/run/docker.sock",
-        network_mode="project-net",
+        network_mode="football_graphs_project-net",
         mounts=[
             Mount(
                 source=f"{PROJECT_DATA}/Secret/python_user",
@@ -50,7 +50,8 @@ with DAG(
             "POSTGRES_PASSWORD": db_conn.password,
             "POSTGRES_DB": db_conn.schema,
             "API_FOOTBALL_KEY": API_KEY
-        }
+        },
+        mount_tmp_dir=False,
     )
 
     run_docker_task

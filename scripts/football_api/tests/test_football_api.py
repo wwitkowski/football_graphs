@@ -2,7 +2,7 @@ import os
 from unittest import mock
 
 import pytest
-from data_backend.models import Request
+from data_backend.database.models import Request
 from freezegun import freeze_time
 
 from scripts.football_api.football_api import (

@@ -1,11 +1,12 @@
 [project]
 name = "football_graphs"
-version = "0.1.5"
+version = "0.2.0"
 description = "Football stats and graphs"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "data-backend",
+    "pydantic>=1.10.22",
     "pyyaml>=6.0.2",
 ]
 
@@ -18,7 +19,7 @@ airflow = [
 dev = [
     "pytest>=8.3.5",
     "pytest-cov>=6.2.1",
-    "freezegun==0.3.4"
+    "freezegun==0.3.4",
 ]
 
 [tool.uv.workspace]

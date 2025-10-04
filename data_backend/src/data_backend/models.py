@@ -1,30 +1,26 @@
-from datetime import datetime, timezone
-from enum import Enum
+from __future__ import annotations
 from typing import Any
-
-from sqlmodel import JSON, Field, SQLModel, String
-from typing_extensions import Literal
-
-
-class RequestStatusEnum(str, Enum):
-    PENDING = "Pending"
-    SUCCEEDED = "Succeeded"
-    FAILED = "Failed"
+from data_backend.database.models import RequestDB, RequestStatus
+from pydantic import BaseModel
 
 
-RequestStatus = Literal[
-    RequestStatusEnum.PENDING, RequestStatusEnum.SUCCEEDED, RequestStatusEnum.FAILED
-]
-
-
-class Request(SQLModel, table=True):  # type: ignore[call-arg]
-    __tablename__ = "requests"
-
-    id: int | None = Field(default=None, primary_key=True)
+class APIRequest(BaseModel):
+    id: int | None
     url: str
-    params: dict[str, Any] | None = Field(default=None, sa_type=JSON)
-    payload: dict[str, Any] | None = Field(default=None, sa_type=JSON)
-    request_metadata: dict[str, Any] | None = Field(default=None, sa_type=JSON)
-    status: RequestStatus = Field(default=RequestStatusEnum.PENDING, sa_type=String)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    params: dict[str, str] | None
+    payload: dict[str, Any] | None
+    type: str | None
+    status: RequestStatus | None
+
+    class Config:
+        orm_mode = True
+        
+    def to_orm(self) -> RequestDB:
+        return RequestDB(**self.dict())
+
+
+class APIResponse(BaseModel):
+    body: str
+    request: APIRequest
+    path: str | None
+    error: str | None
