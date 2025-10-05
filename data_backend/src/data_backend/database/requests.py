@@ -33,18 +33,26 @@ class RequestStore:
         """
         self.session_factory = session_factory
 
-    def get_pending(self) -> list[APIRequest]:
+    def get_pending(self, historical: bool = False) -> list[APIRequest]:
         """
-        Retrieve all requests that are still pending.
+        Retrieve all pending requests, optionally filtering by historical or ongoing.
+
+        Parameters
+        ----------
+        historical : bool, optional
+            If True, only returns historical requests. If False (default), returns
+            ongoing requests.
 
         Returns
         -------
         list of APIRequest
-            A list of APIRequest objects with status ``PENDING``.
+            A list of APIRequest objects with status ``PENDING`` and matching the
+            specified historical flag.
         """
         with self.session_factory() as session:
             stmt = select(RequestDB).where(
-                RequestDB.status == RequestStatusEnum.PENDING
+                RequestDB.status == RequestStatusEnum.PENDING,
+                RequestDB.is_historical == historical
             )
             result = session.exec(stmt).all()
             return [APIRequest.from_orm(r) for r in result]

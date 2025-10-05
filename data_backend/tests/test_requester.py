@@ -15,7 +15,7 @@ def test_get_success():
     session = FakeHTTPSession(response=response)
 
     requester = HTTPRequester(http_session=session)
-    req = APIRequest(url="http://test.com")
+    req = APIRequest(url="http://test.com", type="test")
     result = requester.get(req)
 
     assert result == APIResponse(
@@ -33,7 +33,7 @@ def test_get_rate_limit(mock_sleep):
     rate_limit = RateLimiter(0.1, "second")
     requester = HTTPRequester(http_session=session, rate_limit=rate_limit)
 
-    req = APIRequest(url="http://test.com")
+    req = APIRequest(url="http://test.com", type="test")
     requester.get(req)
     mock_sleep.assert_called_once()
 
@@ -42,7 +42,7 @@ def test_get_http_error():
     session = FakeHTTPSession(FakeResponse("Not Found", 404))
     requester = HTTPRequester(http_session=session)
 
-    req = APIRequest(url="http://test.com")
+    req = APIRequest(url="http://test.com", type="test")
     result = requester.get(req)
 
     assert result.body == "Not Found"
@@ -56,7 +56,7 @@ def test_request_exception():
 
     requester = HTTPRequester(http_session=BrokenHTTPSession())
 
-    req = APIRequest(url="http://test.com")
+    req = APIRequest(url="http://test.com", type="test")
     result = requester.get(req)
 
     assert result.error == "Boom!"
@@ -67,5 +67,5 @@ def test_get_request_limit_reached():
     requester = HTTPRequester(request_limit=1, request_count=1)
 
     with pytest.raises(RequestLimitReachedException):
-        req = APIRequest(url="http://test.com")
+        req = APIRequest(url="http://test.com", type="test")
         requester.get(req)
