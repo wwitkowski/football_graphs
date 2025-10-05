@@ -717,7 +717,7 @@ wheels = [
 
 [[package]]
 name = "data-backend"
-version = "0.2.2"
+version = "0.3.0"
 source = { editable = "data_backend" }
 dependencies = [
     { name = "boto3" },
@@ -966,7 +966,7 @@ wheels = [
 
 [[package]]
 name = "football-graphs"
-version = "0.1.5"
+version = "0.2.0"
 source = { virtual = "." }
 dependencies = [
     { name = "data-backend" },

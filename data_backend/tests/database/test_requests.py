@@ -1,17 +1,14 @@
-from data_backend.database.requests import RequestStore
-from data_backend.database.models import RequestStatusEnum, RequestDB
-from data_backend.models import APIRequest
 from sqlmodel import select
 
+from data_backend.database.models import RequestDB, RequestStatusEnum
+from data_backend.database.requests import RequestStore
+from data_backend.models import APIRequest
 
 
 def test_add(sqlite_session_factory):
     requests = RequestStore(sqlite_session_factory)
     r1 = APIRequest(
-        url="test.com",
-        type="test",
-        params={"status": "pending"},
-        payload={"param": 1}
+        url="test.com", type="test", params={"status": "pending"}, payload={"param": 1}
     )
     requests.add([r1])
     assert r1.id is not None
@@ -20,24 +17,21 @@ def test_add(sqlite_session_factory):
 def test_get_pending(sqlite_session_factory):
     requests = RequestStore(sqlite_session_factory)
     r1 = APIRequest(
-        url="test.com",
-        type="test",
-        params={"status": "pending"},
-        payload={"param": 1}
+        url="test.com", type="test", params={"status": "pending"}, payload={"param": 1}
     )
     r2 = APIRequest(
         url="test.com",
         type="test",
         params={"status": "succeeded"},
         payload={"param": 2},
-        status=RequestStatusEnum.SUCCEEDED
+        status=RequestStatusEnum.SUCCEEDED,
     )
     r3 = APIRequest(
         url="test.com",
         type="test",
         params={"status": "failed"},
         payload={"param": 3},
-        status=RequestStatusEnum.FAILED
+        status=RequestStatusEnum.FAILED,
     )
     requests.add([r1, r2, r3])
 
@@ -52,24 +46,21 @@ def test_get_pending(sqlite_session_factory):
 def test_get_today_count(sqlite_session_factory):
     requests = RequestStore(sqlite_session_factory)
     r1 = APIRequest(
-        url="test.com",
-        type="test",
-        params={"status": "pending"},
-        payload={"param": 1}
+        url="test.com", type="test", params={"status": "pending"}, payload={"param": 1}
     )
     r2 = APIRequest(
         url="test.com",
         type="test",
         params={"status": "succeeded"},
         payload={"param": 2},
-        status=RequestStatusEnum.SUCCEEDED
+        status=RequestStatusEnum.SUCCEEDED,
     )
     r3 = APIRequest(
         url="test.com",
         type="test",
         params={"status": "failed"},
         payload={"param": 3},
-        status=RequestStatusEnum.FAILED
+        status=RequestStatusEnum.FAILED,
     )
     requests.add([r1, r2, r3])
 
@@ -80,10 +71,7 @@ def test_get_today_count(sqlite_session_factory):
 def test_complete_request(sqlite_session_factory):
     requests = RequestStore(sqlite_session_factory)
     r1 = APIRequest(
-        url="test.com",
-        type="test",
-        params={"status": "pending"},
-        payload={"param": 1}
+        url="test.com", type="test", params={"status": "pending"}, payload={"param": 1}
     )
     requests.add([r1])
 

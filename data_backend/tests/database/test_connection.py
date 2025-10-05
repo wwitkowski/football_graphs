@@ -1,5 +1,4 @@
 from data_backend.database.connection import get_db_url
-import pytest
 
 
 def test_get_db_url_success(monkeypatch):

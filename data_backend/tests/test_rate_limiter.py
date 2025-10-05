@@ -1,5 +1,6 @@
-from data_backend.rate_limiter import RateLimiter
 import pytest
+
+from data_backend.rate_limiter import RateLimiter
 
 
 @pytest.mark.parametrize(

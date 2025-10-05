@@ -1,11 +1,12 @@
 from unittest import mock
+
+import pytest
+import requests
+
 from data_backend.exceptions import RequestLimitReachedException
 from data_backend.models import APIRequest, APIResponse
 from data_backend.rate_limiter import RateLimiter
 from data_backend.requester import HTTPRequester
-import pytest
-import requests
-
 from tests.conftest import FakeHTTPSession, FakeResponse
 
 

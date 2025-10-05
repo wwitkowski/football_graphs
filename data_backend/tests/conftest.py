@@ -1,9 +1,9 @@
 import boto3
+import pytest
 import requests
 from moto import mock_aws
-import pytest
-from sqlmodel import SQLModel, create_engine, Session
 from sqlalchemy.orm import sessionmaker
+from sqlmodel import Session, SQLModel, create_engine
 
 
 @pytest.fixture
@@ -15,11 +15,7 @@ def test_engine():
 
 @pytest.fixture(scope="function")
 def sqlite_session_factory(test_engine):
-    return sessionmaker(
-        bind=test_engine,
-        class_=Session, 
-        expire_on_commit=False
-    )
+    return sessionmaker(bind=test_engine, class_=Session, expire_on_commit=False)
 
 
 @pytest.fixture
