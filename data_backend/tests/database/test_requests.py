@@ -43,6 +43,41 @@ def test_get_pending(sqlite_session_factory):
     assert result[0].payload == r1.payload
 
 
+def test_get_pending_historical(sqlite_session_factory):
+    requests = RequestStore(sqlite_session_factory)
+    r1 = APIRequest(
+        url="test.com",
+        type="test",
+        params={"status": "pending"},
+        payload={"param": 1},
+        is_historical=True,
+    )
+    r2 = APIRequest(
+        url="test.com",
+        type="test",
+        params={"status": "succeeded"},
+        payload={"param": 2},
+        status=RequestStatusEnum.SUCCEEDED,
+        is_historical=True,
+    )
+    r3 = APIRequest(
+        url="test.com",
+        type="test",
+        params={"status": "pending"},
+        payload={"param": 3},
+        status=RequestStatusEnum.PENDING,
+        is_historical=False,
+    )
+    requests.add([r1, r2, r3])
+
+    result = requests.get_pending(historical=True)
+    assert len(result) == 1
+    assert result[0].url == r1.url
+    assert result[0].type == r1.type
+    assert result[0].params == r1.params
+    assert result[0].payload == r1.payload
+
+
 def test_get_today_count(sqlite_session_factory):
     requests = RequestStore(sqlite_session_factory)
     r1 = APIRequest(

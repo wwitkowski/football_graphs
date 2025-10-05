@@ -52,7 +52,7 @@ class RequestStore:
         with self.session_factory() as session:
             stmt = select(RequestDB).where(
                 RequestDB.status == RequestStatusEnum.PENDING,
-                RequestDB.is_historical == historical
+                RequestDB.is_historical == historical,
             )
             result = session.exec(stmt).all()
             return [APIRequest.from_orm(r) for r in result]
