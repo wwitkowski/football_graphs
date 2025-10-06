@@ -33,7 +33,7 @@ class RequestStore:
         """
         self.session_factory = session_factory
 
-    def get_pending(self, historical: bool = False) -> list[APIRequest]:
+    def get_pending(self, name: str) -> list[APIRequest]:
         """
         Retrieve all pending requests, optionally filtering by historical or ongoing.
 
@@ -52,12 +52,12 @@ class RequestStore:
         with self.session_factory() as session:
             stmt = select(RequestDB).where(
                 RequestDB.status == RequestStatusEnum.PENDING,
-                RequestDB.is_historical == historical,
+                RequestDB.name == name,
             )
             result = session.exec(stmt).all()
             return [APIRequest.from_orm(r) for r in result]
 
-    def get_today_count(self) -> int:
+    def get_today_count(self, name: str) -> int:
         """
         Count the number of non-pending requests updated today.
 
@@ -69,14 +69,14 @@ class RequestStore:
         """
         today = date.today()
         with self.session_factory() as session:
-            stmt = (
-                select(func.count(RequestDB.id))
-                .where(RequestDB.updated_at >= today)
-                .where(RequestDB.status != RequestStatusEnum.PENDING)
+            stmt = select(func.count(RequestDB.id)).where(
+                RequestDB.updated_at >= today,
+                RequestDB.name == name,
+                RequestDB.status != RequestStatusEnum.PENDING,
             )
             return session.exec(stmt).one()
 
-    def add(self, api_requests: list[APIRequest]) -> None:
+    def add(self, api_requests: list[APIRequest], name: str) -> None:
         """
         Insert new API requests into the database.
 
@@ -85,7 +85,7 @@ class RequestStore:
         api_requests : list of APIRequest
             A list of APIRequest objects to persist in the database.
         """
-        db_requests = [r.to_orm() for r in api_requests]
+        db_requests = [r.to_orm(name=name) for r in api_requests]
         with self.session_factory() as session:
             session.add_all(db_requests)
             session.commit()

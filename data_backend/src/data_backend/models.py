@@ -19,7 +19,7 @@ class APIRequest(BaseModel):
     class Config:
         orm_mode = True
 
-    def to_orm(self) -> RequestDB:
+    def to_orm(self, name: str) -> RequestDB:
         """
         Convert this APIRequest to the corresponding ORM model for persistence.
 
@@ -28,7 +28,7 @@ class APIRequest(BaseModel):
         RequestDB
             The database representation of this request.
         """
-        return RequestDB(**self.dict())
+        return RequestDB(name=name, **self.dict())
 
 
 class APIResponse(BaseModel):

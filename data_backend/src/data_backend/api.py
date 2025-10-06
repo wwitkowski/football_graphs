@@ -30,6 +30,7 @@ class APIDownloader:
 
     def __init__(
         self,
+        name: str,
         response_handler: ResponseHandler,
         http_session: requests.Session | None = None,
         rate_limit: RateLimiter | None = None,
@@ -57,6 +58,7 @@ class APIDownloader:
         request_store : RequestStore, optional
             Database access object for persisting and retrieving requests.
         """
+        self.name = name
         self.requests: RequestStore = request_store
         self.handler: ResponseHandler = response_handler
         self.files: S3Client = storage_client
@@ -64,7 +66,7 @@ class APIDownloader:
             http_session=http_session,
             rate_limit=rate_limit,
             request_limit=request_limit,
-            request_count=self.requests.get_today_count(),
+            request_count=self.requests.get_today_count(name=name),
         )
         self._queue: Deque[APIRequest] = deque()
 
@@ -78,7 +80,7 @@ class APIDownloader:
             The requests to enqueue and persist.
         """
         self._queue.extend(requests)
-        self.requests.add(requests)
+        self.requests.add(requests, self.name)
 
     def _download(self) -> None:
         """
@@ -125,7 +127,7 @@ class APIDownloader:
         """
         Download all pending requests from the database.
         """
-        pending_requests = self.requests.get_pending()
+        pending_requests = self.requests.get_pending(self.name)
         logger.info(f"Found {len(pending_requests)} pending requests to download.")
         self._queue.extend(pending_requests)
         self._download()

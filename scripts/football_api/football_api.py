@@ -1,15 +1,15 @@
-from functools import partial
 import json
 import logging
 import os
+from functools import partial
 from pathlib import Path
 from typing import Any
 
-from data_backend.handlers import ResponseHandler
-from data_backend.models import APIRequest
 import requests
 from data_backend.api import APIDownloader
-
+from data_backend.config import get_config
+from data_backend.handlers import ResponseHandler
+from data_backend.models import APIRequest
 
 BASE_URL = "https://api-football-v1.p.rapidapi.com/v3"
 API_KEY = os.environ.get("API_FOOTBALL_KEY")
@@ -17,7 +17,6 @@ API_HOST = "api-football-v1.p.rapidapi.com"
 REQUEST_DAILY_LIMIT = 100
 
 logger = logging.getLogger(__name__)
-
 
 
 def parse_schedule_response(body: str) -> tuple[dict[str, Any], str]:
@@ -55,7 +54,9 @@ def generate_fixture_requests(body: str, league_ids: list[str]) -> list[APIReque
     return requests
 
 
-def parse_stats_response(body: str, ) -> tuple[dict[str, Any], str]:
+def parse_stats_response(
+    body: str,
+) -> tuple[dict[str, Any], str]:
     data = json.loads(body)
     fixture_id = data.get("parameters", {}).get("fixture")
     endpoint = data.get("get", "")
@@ -65,33 +66,42 @@ def parse_stats_response(body: str, ) -> tuple[dict[str, Any], str]:
     return data, f"{fixture_id}_{filename}.json"
 
 
-
-def run_download_football_api(date: str) -> None:
+def get_football_api_downloader(name: str) -> APIDownloader:
     http_session = requests.Session()
     http_session.headers.update(
         {"x-rapidapi-key": API_KEY, "x-rapidapi-host": API_HOST}
     )
 
+    config = get_config(Path(__file__).parent / "config.yaml")
+    league_ids = config["league_ids"]
+
     generate_fixture_requests_filtered = partial(
-        generate_fixture_requests, league_ids=["39", "140", "78", "135", "61"])
-    
-
-    handler = ResponseHandler() \
-        .add_parser("schedule", parse_schedule_response) \
-        .add_parser("match_stats", parse_stats_response) \
-        .add_parser("player_stats", parse_stats_response) \
-        .add_generator("schedule", generate_fixture_requests_filtered)
-
-    downloader = APIDownloader(
-        http_session=http_session,
-        request_limit=REQUEST_DAILY_LIMIT,
-        response_handler=handler
+        generate_fixture_requests, league_ids=league_ids
     )
 
+    handler = (
+        ResponseHandler()
+        .add_parser("schedule", parse_schedule_response)
+        .add_parser("match_stats", parse_stats_response)
+        .add_parser("player_stats", parse_stats_response)
+        .add_request_generator("schedule", generate_fixture_requests_filtered)
+    )
+
+    downloader = APIDownloader(
+        name=name,
+        http_session=http_session,
+        request_limit=REQUEST_DAILY_LIMIT,
+        response_handler=handler,
+    )
+
+    return downloader
+
+
+def start_download(downloader: APIDownloader, date: str) -> None:
+    downloader.download_backlog()
     request = APIRequest(
         endpoint=f"{BASE_URL}/fixtures",
         params={"date": date},
         type="schedule",
     )
-
     downloader.download(request)

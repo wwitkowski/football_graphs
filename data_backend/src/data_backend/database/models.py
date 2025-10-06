@@ -21,6 +21,7 @@ class RequestDB(SQLModel, table=True):  # type: ignore[call-arg]
     __tablename__ = "requests"
 
     id: int | None = Field(default=None, primary_key=True)
+    name: str
     url: str
     params: dict[str, Any] | None = Field(default=None, sa_type=JSON)
     payload: dict[str, Any] | None = Field(default=None, sa_type=JSON)
