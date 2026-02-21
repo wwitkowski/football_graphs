@@ -31,7 +31,7 @@ def main(
     )
     args = parser.parse_args(argv)
     logger.info(f"Starting download for {args.name}, date: {args.date}")
-    downloader = downloader_factory(name=args.name)
+    downloader = downloader_factory(args.name)
     start_download(downloader, args.date)
 
 
