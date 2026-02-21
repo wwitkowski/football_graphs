@@ -38,7 +38,7 @@ with DAG(
                 source=f"{PROJECT_DATA_ROOT}/Secret/python_user",
                 target="/opt/airflow/.aws/credentials",
                 type="bind",
-                read_only=True
+                read_only=True,
             )
         ],
         environment={

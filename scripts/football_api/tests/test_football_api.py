@@ -1,7 +1,8 @@
-import pytest
 import json
 
+import pytest
 from data_backend.api import APIDownloader
+
 from scripts.football_api import football_api
 
 
@@ -137,7 +138,9 @@ def mock_player_stats_data():
 
 
 def test_parse_schedule_response_success(mock_schedule_data):
-    data, filename = football_api.parse_schedule_response(json.dumps(mock_schedule_data))
+    data, filename = football_api.parse_schedule_response(
+        json.dumps(mock_schedule_data)
+    )
     assert data == mock_schedule_data
     assert filename == "2021-01-29_schedule.json"
 
@@ -166,13 +169,17 @@ def test_generate_fixture_requests_filters_by_league(mock_schedule_data):
 
 
 def test_parse_stats_response_for_match_stats(mock_fixture_stats_data):
-    data, filename = football_api.parse_stats_response(json.dumps(mock_fixture_stats_data))
+    data, filename = football_api.parse_stats_response(
+        json.dumps(mock_fixture_stats_data)
+    )
     assert data == mock_fixture_stats_data
     assert filename == "215662_statistics.json"
 
 
 def test_parse_stats_response_for_player_stats(mock_player_stats_data):
-    data, filename = football_api.parse_stats_response(json.dumps(mock_player_stats_data))
+    data, filename = football_api.parse_stats_response(
+        json.dumps(mock_player_stats_data)
+    )
     assert data == mock_player_stats_data
     assert filename == "169080_players.json"
 

@@ -2,30 +2,39 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
-
+from airflow.models.connection import Connection
 from airflow.models.dagbag import DagBag
 from airflow.providers.docker.operators.docker import DockerOperator
-from airflow.models.connection import Connection
-
 
 MOCK_VARIABLES = {
     "REPO_OWNER": "my_repo_owner",
     "BACKEND_TAG": "latest",
     "API_FOOTBALL_KEY": "dummy_key",
-    "PYTHON_USER_AWS_SECRET": "dummy_secret"
+    "PYTHON_USER_AWS_SECRET": "dummy_secret",
 }
 
 MOCK_CONNECTIONS = {
-    "footgraph_db": Connection(conn_id="footgraph_db", conn_type="postgres", host="localhost", login="user", password="pass", schema="db")
+    "footgraph_db": Connection(
+        conn_id="footgraph_db",
+        conn_type="postgres",
+        host="localhost",
+        login="user",
+        password="pass",
+        schema="db",
+    )
 }
+
 
 @pytest.fixture(scope="module")
 def dagbag():
     # Patch both Variable.get and BaseHook.get_connection before importing DAGs
-    with mock.patch("airflow.models.variable.Variable.get") as mock_var_get, \
-         mock.patch("airflow.hooks.base.BaseHook.get_connection") as mock_get_conn:
-        
-        mock_var_get.side_effect = lambda key, default_var=None: MOCK_VARIABLES.get(key, default_var)
+    with (
+        mock.patch("airflow.models.variable.Variable.get") as mock_var_get,
+        mock.patch("airflow.hooks.base.BaseHook.get_connection") as mock_get_conn,
+    ):
+        mock_var_get.side_effect = lambda key, default_var=None: MOCK_VARIABLES.get(
+            key, default_var
+        )
         mock_get_conn.side_effect = lambda conn_id: MOCK_CONNECTIONS[conn_id]
 
         db = DagBag(dag_folder="airflow/dags", include_examples=False)
