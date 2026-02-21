@@ -35,17 +35,17 @@ def generate_fixture_requests(body: str, league_ids: list[str]) -> list[APIReque
     for fixture in data.get("response", []):
         league_id = fixture.get("league", {}).get("id")
         fixture_id = fixture.get("fixture", {}).get("id")
-        if not fixture_id or league_id not in league_ids:
+        if not fixture_id or str(league_id) not in league_ids:
             continue
         requests.extend(
             [
                 APIRequest(
-                    endpoint=f"{BASE_URL}/fixtures/statistics",
+                    url=f"{BASE_URL}/fixtures/statistics",
                     params={"fixture": fixture_id},
                     type="match_stats",
                 ),
                 APIRequest(
-                    endpoint=f"{BASE_URL}/fixtures/players",
+                    url=f"{BASE_URL}/fixtures/players",
                     params={"fixture": fixture_id},
                     type="player_stats",
                 ),
@@ -66,14 +66,20 @@ def parse_stats_response(
     return data, f"{fixture_id}_{filename}.json"
 
 
-def get_football_api_downloader(name: str) -> APIDownloader:
-    http_session = requests.Session()
+def get_football_api_downloader(
+    name: str,
+    http_session: requests.Session | None = None,
+    config: dict[str, Any] | None = None,
+    request_store: Any | None = None,
+    storage_client: Any | None = None,
+) -> APIDownloader:
+    http_session = http_session or requests.Session()
     http_session.headers.update(
         {"x-rapidapi-key": API_KEY, "x-rapidapi-host": API_HOST}
     )
 
-    config = get_config(Path(__file__).parent / "config.yaml")
-    league_ids = config["league_ids"]
+    config = config or get_config(Path(__file__).parent / "config.yaml")
+    league_ids = [str(x) for x in config["leagues"]]
 
     generate_fixture_requests_filtered = partial(
         generate_fixture_requests, league_ids=league_ids
@@ -87,12 +93,18 @@ def get_football_api_downloader(name: str) -> APIDownloader:
         .add_request_generator("schedule", generate_fixture_requests_filtered)
     )
 
-    downloader = APIDownloader(
-        name=name,
-        http_session=http_session,
-        request_limit=REQUEST_DAILY_LIMIT,
-        response_handler=handler,
-    )
+    downloader_kwargs: dict[str, Any] = {
+        "name": name,
+        "http_session": http_session,
+        "request_limit": REQUEST_DAILY_LIMIT,
+        "response_handler": handler,
+    }
+    if request_store is not None:
+        downloader_kwargs["request_store"] = request_store
+    if storage_client is not None:
+        downloader_kwargs["storage_client"] = storage_client
+
+    downloader = APIDownloader(**downloader_kwargs)
 
     return downloader
 
@@ -100,7 +112,7 @@ def get_football_api_downloader(name: str) -> APIDownloader:
 def start_download(downloader: APIDownloader, date: str) -> None:
     downloader.download_backlog()
     request = APIRequest(
-        endpoint=f"{BASE_URL}/fixtures",
+        url=f"{BASE_URL}/fixtures",
         params={"date": date},
         type="schedule",
     )
