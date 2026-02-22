@@ -1,16 +1,9 @@
-import os
-from unittest import mock
+import json
 
 import pytest
-from data_backend.models import Request
-from freezegun import freeze_time
+from data_backend.api import APIDownloader
 
-from scripts.football_api.football_api import (
-    BASE_URL,
-    handle_schedule_response,
-    handle_stats_response,
-    run_download_football_api,
-)
+from scripts.football_api import football_api
 
 
 @pytest.fixture
@@ -144,134 +137,115 @@ def mock_player_stats_data():
     }
 
 
-@pytest.fixture
-def mock_s3():
-    return mock.Mock()
-
-
-@freeze_time("2025-01-01")
-def test_handle_schedule_response(mock_s3, mock_schedule_data):
-    new_requests = handle_schedule_response(
-        mock_schedule_data,
-        date="2025-01-01",
-        league_ids=[2],
-        s3_client=mock_s3,
+def test_parse_schedule_response_success(mock_schedule_data):
+    data, filename = football_api.parse_schedule_response(
+        json.dumps(mock_schedule_data)
     )
-    expected_requests = [
-        Request(
-            endpoint=f"{BASE_URL}/fixtures/statistics",
-            params={"fixture": 1435553},
-            request_metadata={"date": "2025-01-01"},
-        ),
-        Request(
-            endpoint=f"{BASE_URL}/fixtures/players",
-            params={"fixture": 1435553},
-            request_metadata={"date": "2025-01-01"},
-        ),
-    ]
-    mock_s3.upload_json.assert_called_once_with(
-        mock_schedule_data, "2025-01-01/schedule.json"
+    assert data == mock_schedule_data
+    assert filename == "2021-01-29_schedule.json"
+
+
+def test_parse_schedule_response_missing_date_logs_warning(caplog):
+    with caplog.at_level("WARNING"):
+        data, filename = football_api.parse_schedule_response(
+            json.dumps({"parameters": {}, "response": []})
+        )
+    assert data["response"] == []
+    assert filename == "_schedule.json"
+    assert "missing 'date' parameter" in caplog.text
+
+
+def test_generate_fixture_requests_filters_by_league(mock_schedule_data):
+    requests = football_api.generate_fixture_requests(
+        json.dumps(mock_schedule_data), league_ids=["2", "3"]
     )
-    assert new_requests == expected_requests
+    assert len(requests) == 2
+    assert requests[0].type == "match_stats"
+    assert requests[0].url.endswith("/fixtures/statistics")
+    assert requests[0].params == {"fixture": "1435553"}
+    assert requests[1].type == "player_stats"
+    assert requests[1].url.endswith("/fixtures/players")
+    assert requests[1].params == {"fixture": "1435553"}
 
 
-def test_handle_schedule_response_no_leagues(mock_s3, mock_schedule_data):
-    new_requests = handle_schedule_response(
-        mock_schedule_data,
-        date="2025-01-01",
-        league_ids=[120],
-        s3_client=mock_s3,
+def test_parse_stats_response_for_match_stats(mock_fixture_stats_data):
+    data, filename = football_api.parse_stats_response(
+        json.dumps(mock_fixture_stats_data)
     )
-    mock_s3.upload_json.assert_called_once_with(
-        mock_schedule_data, "2025-01-01/schedule.json"
+    assert data == mock_fixture_stats_data
+    assert filename == "215662_statistics.json"
+
+
+def test_parse_stats_response_for_player_stats(mock_player_stats_data):
+    data, filename = football_api.parse_stats_response(
+        json.dumps(mock_player_stats_data)
     )
-    assert new_requests == []
+    assert data == mock_player_stats_data
+    assert filename == "169080_players.json"
 
 
-def test_handle_stats_response_stats(mock_s3, mock_fixture_stats_data):
-    handle_stats_response(mock_fixture_stats_data, "2025-01-01", s3_client=mock_s3)
-    mock_s3.upload_json.assert_called_once_with(
-        mock_fixture_stats_data, "2025-01-01/215662_statistics.json"
+def test_parse_stats_response_missing_fields_logs_warning(caplog):
+    with caplog.at_level("WARNING"):
+        _, filename = football_api.parse_stats_response(json.dumps({"parameters": {}}))
+    assert filename == "None_.json"
+    assert "missing 'fixture' parameter or 'get' field" in caplog.text
+
+
+def test_get_football_api_downloader_builds_components():
+    class FakeSession:
+        def __init__(self):
+            self.headers = {}
+
+    class FakeRequestStore:
+        def get_today_count(self, name):
+            return 0
+
+    class FakeStorageClient:
+        pass
+
+    fake_session = FakeSession()
+    fake_request_store = FakeRequestStore()
+    fake_storage_client = FakeStorageClient()
+
+    downloader = football_api.get_football_api_downloader(
+        name="daily-job",
+        http_session=fake_session,
+        config={"leagues": [2, 3]},
+        request_store=fake_request_store,
+        storage_client=fake_storage_client,
     )
 
+    assert isinstance(downloader, APIDownloader)
+    assert downloader.name == "daily-job"
+    assert downloader.requests is fake_request_store
+    assert downloader.files is fake_storage_client
+    assert downloader.requester.http_session is fake_session
+    assert downloader.requester.request_limit == football_api.REQUEST_DAILY_LIMIT
+    assert fake_session.headers["x-rapidapi-host"] == football_api.API_HOST
+    assert "x-rapidapi-key" in fake_session.headers
 
-def test_handle_stats_response_players(mock_s3, mock_player_stats_data):
-    handle_stats_response(mock_player_stats_data, "2025-01-01", s3_client=mock_s3)
-    mock_s3.upload_json.assert_called_once_with(
-        mock_player_stats_data, "2025-01-01/169080_players.json"
-    )
+    handler = downloader.handler
+    assert set(handler.parsers) == {"schedule", "match_stats", "player_stats"}
+    assert "schedule" in handler.generators
+    assert len(handler.generators["schedule"]) == 1
 
 
-@mock.patch.dict(os.environ, {"API_FOOTBALL_KEY": "fake_key"})
-@mock.patch("scripts.football_api.football_api.S3Client", autospec=True)
-@mock.patch("scripts.football_api.football_api.APIDownloader", autospec=True)
-@mock.patch("scripts.football_api.football_api.get_db_session")
-@mock.patch("scripts.football_api.football_api.get_db_url")
-@mock.patch("scripts.football_api.football_api.get_config")
-@mock.patch("scripts.football_api.football_api.handle_schedule_response")
-@mock.patch("scripts.football_api.football_api.handle_stats_response")
-def test_run_download_football_api(
-    mock_handle_stats,
-    mock_handle_schedule,
-    mock_get_config,
-    mock_get_db_url,
-    mock_get_db_session,
-    mock_api_downloader_cls,
-    mock_s3_client,
-    mock_schedule_data,
-    mock_fixture_stats_data,
-    mock_player_stats_data,
-):
-    mock_get_db_url.return_value = "sqlite://"
-    mock_db_session = mock.Mock()
-    mock_get_db_session.return_value.__enter__.return_value = mock_db_session
-    mock_get_config.return_value = {"leagues": [2, 39]}
+def test_start_download_downloads_backlog_then_schedule_request():
+    class FakeDownloader:
+        def __init__(self):
+            self.calls = []
 
-    mock_requests = [
-        Request(
-            endpoint=f"{BASE_URL}/fixtures",
-            params={"date": "2025-01-01"},
-            request_metadata={"date": "2025-01-01"},
-        ),
-        Request(
-            endpoint=f"{BASE_URL}/fixtures/statistics",
-            params={"fixture": 1435553},
-            request_metadata={"date": "2025-01-01"},
-        ),
-        Request(
-            endpoint=f"{BASE_URL}/fixtures/players",
-            params={"fixture": 1435553},
-            request_metadata={"date": "2025-01-01"},
-        ),
-    ]
+        def download_backlog(self):
+            self.calls.append("backlog")
 
-    mock_downloader = mock.Mock()
-    mock_api_downloader_cls.return_value = mock_downloader
-    mock_downloader.download_next.return_value = [
-        (mock_requests[0], mock.Mock(json=mock.Mock(return_value=mock_schedule_data))),
-        (
-            mock_requests[1],
-            mock.Mock(json=mock.Mock(return_value=mock_fixture_stats_data)),
-        ),
-        (
-            mock_requests[2],
-            mock.Mock(json=mock.Mock(return_value=mock_player_stats_data)),
-        ),
-    ]
-    mock_handle_schedule.return_value = mock_requests[1:]
+        def download(self, request):
+            self.calls.append(("download", request))
 
-    run_download_football_api("2025-01-01")
+    downloader = FakeDownloader()
+    football_api.start_download(downloader, "2026-02-20")
 
-    mock_get_db_url.assert_called_once()
-    mock_get_db_session.assert_called_once_with("sqlite://")
-    mock_downloader.add.has_calls = [
-        mock.call([mock_requests[0]]),
-        mock.call([mock_requests[1:]]),
-    ]
-    mock_handle_schedule.assert_called_once_with(
-        mock_schedule_data, "2025-01-01", [2, 39], mock_s3_client.return_value
-    )
-    mock_handle_stats.has_calls = [
-        mock.call(mock_fixture_stats_data, "2025-01-01", mock_s3_client.return_value),
-        mock.call(mock_player_stats_data, "2025-01-01", mock_s3_client.return_value),
-    ]
+    assert downloader.calls[0] == "backlog"
+    _, schedule_request = downloader.calls[1]
+    assert schedule_request.type == "schedule"
+    assert schedule_request.url.endswith("/fixtures")
+    assert schedule_request.params == {"date": "2026-02-20"}

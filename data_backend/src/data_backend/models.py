@@ -1,30 +1,38 @@
-from datetime import datetime, timezone
-from enum import Enum
+from __future__ import annotations
+
 from typing import Any
 
-from sqlmodel import JSON, Field, SQLModel, String
-from typing_extensions import Literal
+from pydantic import BaseModel
+
+from data_backend.database.models import RequestDB, RequestStatus
 
 
-class RequestStatusEnum(str, Enum):
-    PENDING = "Pending"
-    SUCCEEDED = "Succeeded"
-    FAILED = "Failed"
-
-
-RequestStatus = Literal[
-    RequestStatusEnum.PENDING, RequestStatusEnum.SUCCEEDED, RequestStatusEnum.FAILED
-]
-
-
-class Request(SQLModel, table=True):  # type: ignore[call-arg]
-    __tablename__ = "requests"
-
-    id: int | None = Field(default=None, primary_key=True)
+class APIRequest(BaseModel):
+    id: int | None = None
     url: str
-    params: dict[str, Any] | None = Field(default=None, sa_type=JSON)
-    payload: dict[str, Any] | None = Field(default=None, sa_type=JSON)
-    request_metadata: dict[str, Any] | None = Field(default=None, sa_type=JSON)
-    status: RequestStatus = Field(default=RequestStatusEnum.PENDING, sa_type=String)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    type: str
+    params: dict[str, str] | None = None
+    payload: dict[str, Any] | None = None
+    status: RequestStatus | None = None
+    is_historical: bool = False
+
+    class Config:
+        orm_mode = True
+
+    def to_orm(self, name: str) -> RequestDB:
+        """
+        Convert this APIRequest to the corresponding ORM model for persistence.
+
+        Returns
+        -------
+        RequestDB
+            The database representation of this request.
+        """
+        return RequestDB(name=name, **self.dict())
+
+
+class APIResponse(BaseModel):
+    body: str
+    request: APIRequest
+    path: str | None = None
+    error: str | None = None

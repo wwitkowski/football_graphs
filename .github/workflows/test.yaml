@@ -11,10 +11,22 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target:
+        include:
           - path: "scripts/football_api"
+            tests_path: "scripts/football_api/tests"
+            cov_target: "scripts/football_api"
+            project_root: "."
+            install_args: "--group airflow --dev"
           - path: "data_backend"
+            tests_path: "tests"
+            cov_target: "."
+            project_root: "data_backend"
+            install_args: "--dev"
           - path: "airflow"
+            tests_path: "airflow/tests"
+            cov_target: "airflow"
+            project_root: "."
+            install_args: "--group airflow --dev"
 
     steps:
       - uses: actions/checkout@v4
@@ -23,9 +35,11 @@ jobs:
         uses: ./.github/actions/setup-env
       
       - name: Install dependencies
-        run: uv sync --group airflow --dev
+        working-directory: ${{ matrix.project_root }}
+        run: uv sync ${{ matrix.install_args }}
 
       - name: Run pytest
         env:
           PYTHONPATH: ${{ github.workspace }}
-        run: uv run pytest ${{ matrix.target.path }}/tests --cov=${{ matrix.target.path }} --cov-report=term-missing
+        working-directory: ${{ matrix.project_root }}
+        run: uv run pytest ${{ matrix.tests_path }} --cov=${{ matrix.cov_target }} --cov-report=term-missing

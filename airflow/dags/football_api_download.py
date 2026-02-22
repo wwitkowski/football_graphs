@@ -1,8 +1,7 @@
 import os
 
 import pendulum
-from airflow.hooks.base import BaseHook
-from airflow.models import DAG, Variable
+from airflow.models import DAG
 from airflow.providers.docker.operators.docker import DockerOperator
 from docker.types import Mount
 
@@ -13,13 +12,7 @@ default_args = {
 }
 
 dag_id = os.path.basename(__file__).replace(".py", "")
-
-REPO_OWNER = Variable.get("REPO_OWNER")
-BACKEND_TAG = Variable.get("BACKEND_TAG", default_var="latest")
-API_KEY = Variable.get("API_FOOTBALL_KEY")
-PROJECT_DATA = Variable.get("PROJECT_DATA")
-
-db_conn = BaseHook.get_connection('footgraph_db')
+PROJECT_DATA_ROOT = os.environ.get("PROJECT_DATA", "")
 
 with DAG(
     dag_id,
@@ -30,27 +23,32 @@ with DAG(
 ) as dag:
     run_docker_task = DockerOperator(
         task_id="download_ongoing",
-        image=f"ghcr.io/{REPO_OWNER}/data_backend:{BACKEND_TAG}",
+        image="ghcr.io/{{ var.value.REPO_OWNER }}/data_backend:"
+        "{{ var.value.BACKEND_TAG | default('latest', true) }}",
         api_version="auto",
         auto_remove="force",
-        command="uv run python -m scripts.football_api.download_ongoing {{ ds }}",
+        command=(
+            "uv run python -m scripts.football_api.download_ongoing "
+            "{{ ds }} {{ dag.dag_id }}"
+        ),
         docker_url="unix://var/run/docker.sock",
-        network_mode="project-net",
+        network_mode="football_graphs_project-net",
         mounts=[
             Mount(
-                source=f"{PROJECT_DATA}/Secret/python_user",
+                source=f"{PROJECT_DATA_ROOT}/Secret/python_user",
                 target="/opt/airflow/.aws/credentials",
                 type="bind",
-                read_only=True
+                read_only=True,
             )
         ],
         environment={
-            "POSTGRES_HOST": db_conn.host,
-            "POSTGRES_USER": db_conn.login,
-            "POSTGRES_PASSWORD": db_conn.password,
-            "POSTGRES_DB": db_conn.schema,
-            "API_FOOTBALL_KEY": API_KEY
-        }
+            "POSTGRES_HOST": "{{ conn.footgraph_db.host }}",
+            "POSTGRES_USER": "{{ conn.footgraph_db.login }}",
+            "POSTGRES_PASSWORD": "{{ conn.footgraph_db.password }}",
+            "POSTGRES_DB": "{{ conn.footgraph_db.schema }}",
+            "API_FOOTBALL_KEY": "{{ var.value.API_FOOTBALL_KEY }}",
+        },
+        mount_tmp_dir=False,
     )
 
     run_docker_task

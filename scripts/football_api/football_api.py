@@ -1,13 +1,15 @@
+import json
 import logging
 import os
+from functools import partial
 from pathlib import Path
+from typing import Any
 
 import requests
 from data_backend.api import APIDownloader
-from data_backend.aws import S3Client
 from data_backend.config import get_config
-from data_backend.db import get_db_session, get_db_url
-from data_backend.models import Request
+from data_backend.handlers import ResponseHandler
+from data_backend.models import APIRequest
 
 BASE_URL = "https://api-football-v1.p.rapidapi.com/v3"
 API_KEY = os.environ.get("API_FOOTBALL_KEY")
@@ -17,77 +19,101 @@ REQUEST_DAILY_LIMIT = 100
 logger = logging.getLogger(__name__)
 
 
-def handle_schedule_response(
-    data: dict, date: str, league_ids: list[int], s3_client: S3Client
-) -> list[Request]:
-    """Upload schedule to S3, return fixture requests to enqueue."""
-    logger.info(f"Uploading {date}/schedule.json to S3")
-    s3_client.upload_json(data, f"{date}/schedule.json")
-    stats_requests = []
+def parse_schedule_response(body: str) -> tuple[dict[str, Any], str]:
+    """Parse schedule response, return data and date."""
+    data = json.loads(body)
+    date = data.get("parameters", {}).get("date", "")
+    if not date:
+        logger.warning("Schedule response missing 'date' parameter")
+    return data, f"{date}_schedule.json"
+
+
+def generate_fixture_requests(body: str, league_ids: list[str]) -> list[APIRequest]:
+    """Generate fixture statistics and player requests from schedule response."""
+    data = json.loads(body)
+    requests = []
     for fixture in data.get("response", []):
         league_id = fixture.get("league", {}).get("id")
         fixture_id = fixture.get("fixture", {}).get("id")
-        if not fixture_id or league_id not in league_ids:
+        if not fixture_id or str(league_id) not in league_ids:
             continue
-        stats_requests.extend(
+        requests.extend(
             [
-                Request(
-                    endpoint=f"{BASE_URL}/fixtures/statistics",
+                APIRequest(
+                    url=f"{BASE_URL}/fixtures/statistics",
                     params={"fixture": fixture_id},
-                    request_metadata={"date": date},
+                    type="match_stats",
                 ),
-                Request(
-                    endpoint=f"{BASE_URL}/fixtures/players",
+                APIRequest(
+                    url=f"{BASE_URL}/fixtures/players",
                     params={"fixture": fixture_id},
-                    request_metadata={"date": date},
+                    type="player_stats",
                 ),
             ]
         )
+    return requests
 
-    return stats_requests
 
-
-def handle_stats_response(data: dict, date: str, s3_client: S3Client) -> None:
-    """Upload fixture statistics or player stats to S3."""
+def parse_stats_response(
+    body: str,
+) -> tuple[dict[str, Any], str]:
+    data = json.loads(body)
     fixture_id = data.get("parameters", {}).get("fixture")
-    filename = data.get("get")
-    if not fixture_id or not filename:
-        logger.warning("Invalid stats response, missing fixture ID or type")
-        return
-    filename = filename.split("/")[-1]
-    path = f"{date}/{fixture_id}_{filename}.json"
-    logger.info(f"Uploading {path} to S3")
-    s3_client.upload_json(data, path)
+    endpoint = data.get("get", "")
+    if not fixture_id or not endpoint:
+        logger.warning("Stats response missing 'fixture' parameter or 'get' field")
+    filename = endpoint.split("/")[-1]
+    return data, f"{fixture_id}_{filename}.json"
 
 
-def run_download_football_api(date: str) -> None:
-    """Workflow: schedule request -> fixture requests -> uploads."""
-    http_session = requests.Session()
+def get_football_api_downloader(
+    name: str,
+    http_session: requests.Session | None = None,
+    config: dict[str, Any] | None = None,
+    request_store: Any | None = None,
+    storage_client: Any | None = None,
+) -> APIDownloader:
+    http_session = http_session or requests.Session()
     http_session.headers.update(
         {"x-rapidapi-key": API_KEY, "x-rapidapi-host": API_HOST}
     )
-    config = get_config(Path("scripts/config/football_api/config.yaml"))
-    allowed_league_ids = config.get("leagues", [])
-    s3 = S3Client(bucket="raw-data")
 
-    with get_db_session(get_db_url()) as db_session:
-        downloader = APIDownloader(
-            db_session, http_session=http_session, request_limit=REQUEST_DAILY_LIMIT
-        )
+    config = config or get_config(Path(__file__).parent / "config.yaml")
+    league_ids = [str(x) for x in config["leagues"]]
 
-        schedule_request = Request(
-            endpoint=f"{BASE_URL}/fixtures",
-            params={"date": date},
-            request_metadata={"type": "schedule", "date": date},
-        )
-        downloader.add([schedule_request])
+    generate_fixture_requests_filtered = partial(
+        generate_fixture_requests, league_ids=league_ids
+    )
 
-        for req, resp in downloader.download_next(on_error="continue"):
-            data = resp.json()
-            if data.get("get") == "fixtures":
-                new_requests = handle_schedule_response(
-                    data, req.request_metadata["date"], allowed_league_ids, s3
-                )
-                downloader.add(new_requests)
-            else:
-                handle_stats_response(data, req.request_metadata["date"], s3)
+    handler = (
+        ResponseHandler()
+        .add_parser("schedule", parse_schedule_response)
+        .add_parser("match_stats", parse_stats_response)
+        .add_parser("player_stats", parse_stats_response)
+        .add_request_generator("schedule", generate_fixture_requests_filtered)
+    )
+
+    downloader_kwargs: dict[str, Any] = {
+        "name": name,
+        "http_session": http_session,
+        "request_limit": REQUEST_DAILY_LIMIT,
+        "response_handler": handler,
+    }
+    if request_store is not None:
+        downloader_kwargs["request_store"] = request_store
+    if storage_client is not None:
+        downloader_kwargs["storage_client"] = storage_client
+
+    downloader = APIDownloader(**downloader_kwargs)
+
+    return downloader
+
+
+def start_download(downloader: APIDownloader, date: str) -> None:
+    downloader.download_backlog()
+    request = APIRequest(
+        url=f"{BASE_URL}/fixtures",
+        params={"date": date},
+        type="schedule",
+    )
+    downloader.download(request)

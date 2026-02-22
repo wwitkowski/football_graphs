@@ -1,161 +1,133 @@
 import logging
-import time
 from collections import deque
-from datetime import date, datetime, timezone
-from enum import Enum
-from typing import Generator, Literal
+from typing import Deque
 
 import requests
-from sqlmodel import Session, func, select
 
-from data_backend.exceptions import APIRequestException
-from data_backend.models import Request, RequestStatus, RequestStatusEnum
+from data_backend.aws import S3Client
+from data_backend.database.models import RequestStatusEnum
+from data_backend.database.requests import RequestStore
+from data_backend.exceptions import RequestLimitReachedException
+from data_backend.handlers import ResponseHandler
+from data_backend.models import APIRequest
+from data_backend.rate_limiter import RateLimiter
+from data_backend.requester import HTTPRequester
 
 logger = logging.getLogger(__name__)
 
-class OnDownloadError(str, Enum):
-    RAISE = "raise"
-    CONTINUE = "continue"
-
-
-OnDownloadErrorType = Literal[OnDownloadError.RAISE, OnDownloadError.CONTINUE]
-
-
-class RateLimiter:
-    """Converts an allowed event rate into a per-event sleep interval."""
-
-    SECONDS_PER_UNIT = {
-        "second": 1,
-        "minute": 60,
-        "hour": 3600,
-    }
-
-    def __init__(
-        self, events_per_unit: int, unit: Literal["second", "minute", "hour"]
-    ) -> None:
-        if unit not in self.SECONDS_PER_UNIT:
-            raise ValueError(
-                f"Invalid unit: {unit}. "
-                f"Choose from: {list(self.SECONDS_PER_UNIT.keys())}"
-            )
-
-        self.events_per_unit = events_per_unit
-        self.unit = unit
-        self._interval_seconds = self.SECONDS_PER_UNIT[unit] / events_per_unit
-
-    @property
-    def interval_seconds(self) -> float:
-        """Minimum delay (in seconds) between two events to respect the rate limit."""
-        return self._interval_seconds
-
-
-class HTTPRequester:
-    """Handles HTTP requests with optional rate limiting."""
-
-    def __init__(
-        self,
-        http_session: requests.Session | None = None,
-        rate_limit: RateLimiter | None = None,
-    ):
-        self.http_session = http_session or requests.Session()
-        self.rate_limit = rate_limit
-
-    def get(self, url: str, **kwargs) -> requests.Response:
-        if self.rate_limit is not None:
-            time.sleep(self.rate_limit.interval_seconds)
-
-        logger.info(f"Making GET request to {url} with params {kwargs.get('params')}")
-        try:
-            response = self.http_session.get(url, **kwargs)
-            response.raise_for_status()
-            return response
-        except requests.exceptions.RequestException as e:
-            raise APIRequestException(f"Failed to download {url}: {e}") from e
-
-
-class RequestTracker:
-    """Tracks API request counts in the database."""
-
-    def __init__(self, session: Session, request_limit: int | None = None):
-        self.session = session
-        self.limit = request_limit
-        self.request_count = self._get_today_count() if request_limit is not None else 0
-
-    def _get_today_count(self) -> int:
-        today = date.today()
-        stmt = (
-            select(func.count(Request.id))
-            .where(Request.updated_at >= today)
-            .where(Request.status != RequestStatusEnum.PENDING)
-        )
-        return self.session.exec(stmt).one()
-
-    def persist_requests(self, api_requests: list[Request]) -> None:
-        """Persist requests in the DB in a single batch."""
-        self.session.add_all(api_requests)
-        self.session.commit()
-
-    def get_pending_requests(self) -> list[Request]:
-        """Get pending requests one by one."""
-        stmt = select(Request).where(Request.status == RequestStatusEnum.PENDING)
-        return self.session.exec(stmt).all()
-
-    def complete_request(self, api_request: Request, status: RequestStatus) -> None:
-        """Update the request status."""
-        api_request.status = status
-        api_request.updated_at = datetime.now(timezone.utc)
-        self.session.commit()
-
 
 class APIDownloader:
-    """Coordinates HTTP requests with DB tracking."""
+    """
+    Coordinates HTTP requests, persistence, and response handling.
+
+    This class manages the lifecycle of API requests:
+    - Persists requests in the database.
+    - Executes them with rate/request limits.
+    - Parses responses with a response handler.
+    - Stores raw data in object storage.
+    - Marks requests as succeeded or failed.
+    """
 
     def __init__(
         self,
-        db_session: Session,
+        name: str,
+        response_handler: ResponseHandler,
         http_session: requests.Session | None = None,
-        request_limit: int | None = None,
         rate_limit: RateLimiter | None = None,
+        request_limit: int | None = None,
+        storage_client: S3Client = S3Client(
+            bucket_name="raw-data", endpoint="http://minio:9000"
+        ),
+        request_store: RequestStore = RequestStore(),
     ) -> None:
-        self.tracker = RequestTracker(db_session, request_limit)
-        self.requester = HTTPRequester(http_session, rate_limit)
-        self._queue = deque(self.tracker.get_pending_requests())
+        """
+        Initialize an APIDownloader.
 
-    def add(self, requests: list[Request]) -> None:
-        """Add new requests to the internal queue and persist them in DB."""
-        self.tracker.persist_requests(requests)
+        Parameters
+        ----------
+        response_handler : ResponseHandler
+            A handler responsible for parsing responses and generating new requests.
+        http_session : requests.Session, optional
+            A custom HTTP session for requests. If None, a new session is created.
+        rate_limit : RateLimiter, optional
+            An optional rate limiter to throttle request frequency.
+        request_limit : int, optional
+            Maximum number of requests allowed in this session. If None, unlimited.
+        storage_client : S3Client, optional
+            Object storage client for persisting raw responses. Default stores in MinIO.
+        request_store : RequestStore, optional
+            Database access object for persisting and retrieving requests.
+        """
+        self.name = name
+        self.requests: RequestStore = request_store
+        self.handler: ResponseHandler = response_handler
+        self.files: S3Client = storage_client
+        self.requester: HTTPRequester = HTTPRequester(
+            http_session=http_session,
+            rate_limit=rate_limit,
+            request_limit=request_limit,
+            request_count=self.requests.get_today_count(name=name),
+        )
+        self._queue: Deque[APIRequest] = deque()
+
+    def _add(self, requests: list[APIRequest]) -> None:
+        """
+        Add requests to the processing queue and persist them in the database.
+
+        Parameters
+        ----------
+        requests : list of APIRequest
+            The requests to enqueue and persist.
+        """
         self._queue.extend(requests)
+        self.requests.add(requests, self.name)
 
-    def download_next(
-        self, on_error: OnDownloadErrorType = OnDownloadError.CONTINUE
-    ) -> Generator[requests.Response, None, None]:
-        """Yield responses for requests in the internal queue, respecting limits."""
+    def _download(self) -> None:
+        """
+        Process requests in the queue until it is empty.
+        """
         while self._queue:
             request = self._queue.popleft()
 
-            if (
-                self.tracker.limit is not None
-                and self.tracker.request_count >= self.tracker.limit
-            ):
-                logger.exception(f"Request limit of {self.tracker.limit} reached.")
+            try:
+                response = self.requester.get(request)
+            except RequestLimitReachedException:
+                logger.exception(
+                    f"Request limit of {self.requester.request_limit} reached."
+                )
                 return
 
-            try:
-                logger.info(
-                    f"Processing request: {request}, "
-                    f"Request count: {self.tracker.request_count}, "
-                    f"Queue size: {len(self._queue)}"
-                )
-                self.tracker.request_count += 1
-                response = self.requester.get(
-                    request.url, params=request.params, json=request.payload
-                )
-                self.tracker.complete_request(request, RequestStatusEnum.SUCCEEDED)
-                yield request, response
-            except APIRequestException as err:
-                logger.exception(f"Request failed: {request}; Error: {err}")
-                self.tracker.complete_request(request, RequestStatusEnum.FAILED)
-                if on_error == OnDownloadError.RAISE:
-                    raise
-                elif on_error == OnDownloadError.CONTINUE:
-                    continue
+            print(f"DEBUG Response: {response}")
+
+            if response.error:
+                logger.exception(f"Error downloading {request.url}: {response.error}")
+                self.requests.complete(request, RequestStatusEnum.FAILED)
+                continue
+
+            data, path = self.handler.handle(response)
+            self.files.save_json(data, path)
+            new_requests = list(self.handler.collect_new_requests())
+            self._add(new_requests)
+            req_status = RequestStatusEnum.SUCCEEDED
+            self.requests.complete(request, req_status)
+
+    def download(self, request: APIRequest) -> None:
+        """
+        Add a single request to the queue and start download process.
+
+        Parameters
+        ----------
+        request : APIRequest
+            The request to process.
+        """
+        self._add([request])
+        self._download()
+
+    def download_backlog(self) -> None:
+        """
+        Download all pending requests from the database.
+        """
+        pending_requests = self.requests.get_pending(self.name)
+        logger.info(f"Found {len(pending_requests)} pending requests to download.")
+        self._queue.extend(pending_requests)
+        self._download()
