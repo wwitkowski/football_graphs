@@ -11,6 +11,8 @@ x-airflow-common: &airflow-common
     AIRFLOW__WEBSERVER__WORKERS: 1
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
     AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL: 60
+    AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_WEBSERVER_SECRET_KEY}
+    PROJECT_DATA: ${PROJECT_DATA}
   volumes:
     - ./airflow/dags:/opt/airflow/dags:ro
     - ${PROJECT_DATA}/Data/airflow/logs:/opt/airflow/logs
@@ -122,8 +124,6 @@ services:
     command:
       - -c
       - |
-        mkdir -p /sources/logs /sources/dags /sources/plugins
-        chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
         airflow connections add 'footgraph_db' \
           --conn-type 'postgres' \
           --conn-host "${POSTGRES_HOST}" \
@@ -133,7 +133,6 @@ services:
         airflow variables set REPO_OWNER "${REPO_OWNER}"
         airflow variables set BACKEND_TAG "${BACKEND_TAG:-latest}"
         airflow variables set API_FOOTBALL_KEY "${API_FOOTBALL_KEY}"
-        airflow variables set PROJECT_DATA "${PROJECT_DATA}"
         exec /entrypoint airflow version
     environment:
       <<: *airflow-common-env
@@ -141,7 +140,7 @@ services:
       _AIRFLOW_WWW_USER_CREATE: 'true'
       _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_UI_USER}
       _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_UI_PASSWORD}
-    user: "0:0"
+    user: "${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-991}"
     volumes:
       - ./airflow:/sources
     depends_on:
