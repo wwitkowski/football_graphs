@@ -14,7 +14,6 @@ class APIRequest(BaseModel):
     params: dict[str, str] | None = None
     payload: dict[str, Any] | None = None
     status: RequestStatus | None = None
-    is_historical: bool = False
 
     class Config:
         orm_mode = True

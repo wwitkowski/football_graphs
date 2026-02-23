@@ -36,4 +36,4 @@ jobs:
           terraform apply -auto-approve -var-file="/home/rpi_user/Projects/football_graphs/Secret/terraform.tfvars"
 
       - name: Prune old images
-        run: docker image prune -af
+        run: docker image prune -f

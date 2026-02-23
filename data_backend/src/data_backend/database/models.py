@@ -27,6 +27,5 @@ class RequestDB(SQLModel, table=True):  # type: ignore[call-arg]
     payload: dict[str, Any] | None = Field(default=None, sa_type=JSON)
     type: str | None = Field(default=None)
     status: RequestStatus = Field(default=RequestStatusEnum.PENDING, sa_type=String)
-    is_historical: bool = Field(default=False)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
