@@ -12,7 +12,7 @@ default_args = {
 }
 
 dag_id = os.path.basename(__file__).replace(".py", "")
-PROJECT_DATA_ROOT = os.environ["PROJECT_DATA"]
+PROJECT_DATA_ROOT = os.environ.get("PROJECT_DATA", "")
 
 with DAG(
     dag_id,
