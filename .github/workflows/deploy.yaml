@@ -12,6 +12,18 @@ jobs:
       REPO_OWNER: ${{ github.repository_owner }}
 
     steps:
+      - name: Fix workspace permissions
+        run: |
+          if command -v sudo >/dev/null 2>&1; then
+            sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE" || true
+            sudo find "$GITHUB_WORKSPACE" -type d -exec chmod u+rwx {} \; || true
+            sudo find "$GITHUB_WORKSPACE" -type f -exec chmod u+rw {} \; || true
+          else
+            chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE" || true
+            find "$GITHUB_WORKSPACE" -type d -exec chmod u+rwx {} \; || true
+            find "$GITHUB_WORKSPACE" -type f -exec chmod u+rw {} \; || true
+          fi
+
       - uses: actions/checkout@v4
 
       - name: Log in to GHCR

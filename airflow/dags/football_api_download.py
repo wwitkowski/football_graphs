@@ -36,7 +36,7 @@ with DAG(
         mounts=[
             Mount(
                 source=f"{PROJECT_DATA_ROOT}/Secret/python_user",
-                target="/opt/airflow/.aws/credentials",
+                target="/home/app/.aws/credentials",
                 type="bind",
                 read_only=True,
             )
@@ -52,3 +52,5 @@ with DAG(
     )
 
     run_docker_task
+
+
