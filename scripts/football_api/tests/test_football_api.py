@@ -275,7 +275,9 @@ def test_build_date_range_inclusive():
 
 
 def test_build_date_range_raises_when_end_before_start():
-    with pytest.raises(ValueError, match="end_date must be greater than or equal to start_date"):
+    with pytest.raises(
+        ValueError, match="end_date must be greater than or equal to start_date"
+    ):
         football_api.build_date_range("2026-02-23", "2026-02-19")
 
 
