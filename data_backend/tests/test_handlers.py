@@ -25,7 +25,7 @@ def test_add():
 
 def test_handle_and_collect():
     def sample_parser(body):
-        return {"parsed": True}
+        return {"parsed": True}, "/test/path"
 
     def sample_generator(body):
         return [APIRequest(url="http://example.com/new", type="sample_type2")]
@@ -43,7 +43,7 @@ def test_handle_and_collect():
         )
     )
 
-    assert response == {"parsed": True}
+    assert response == ({"parsed": True}, "/test/path")
     new_requests = list(handler.collect_new_requests())
     assert len(new_requests) == 1
     assert new_requests[0].url == "http://example.com/new"

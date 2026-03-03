@@ -272,3 +272,16 @@ def test_build_date_range_inclusive():
         "2026-02-22",
         "2026-02-23",
     ]
+
+
+def test_build_date_range_raises_when_end_before_start():
+    with pytest.raises(ValueError, match="end_date must be greater than or equal to start_date"):
+        football_api.build_date_range("2026-02-23", "2026-02-19")
+
+
+def test_generate_fixture_requests_skips_non_final_status(mock_schedule_data):
+    mock_schedule_data["response"][0]["fixture"]["status"]["short"] = "NS"
+    requests = football_api.generate_fixture_requests(
+        json.dumps(mock_schedule_data), league_ids=["2", "3"]
+    )
+    assert requests == []

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 from pydantic import BaseModel
-from pydantic.dataclasses import dataclass
 
 from data_backend.database.models import RequestDB
 
@@ -62,10 +62,10 @@ class StoredRequest:
             payload=db_request.payload,
         )
         return cls(
-            id=db_request.id,
             request=api_request,
             name=db_request.name,
             logical_date=db_request.logical_date,
+            id=db_request.id,
         )
 
 
