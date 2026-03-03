@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from datetime import datetime, timedelta
 from functools import partial
 from pathlib import Path
 from typing import Any
@@ -19,6 +20,17 @@ REQUEST_DAILY_LIMIT = 100
 logger = logging.getLogger(__name__)
 
 
+def build_date_range(start_date: str, end_date: str) -> list[str]:
+    start = datetime.strptime(start_date, "%Y-%m-%d").date()
+    end = datetime.strptime(end_date, "%Y-%m-%d").date()
+    if end < start:
+        raise ValueError("end_date must be greater than or equal to start_date")
+    return [
+        (start + timedelta(days=offset)).isoformat()
+        for offset in range((end - start).days + 1)
+    ]
+
+
 def parse_schedule_response(body: str) -> tuple[dict[str, Any], str]:
     """Parse schedule response, return data and date."""
     data = json.loads(body)
@@ -35,8 +47,12 @@ def generate_fixture_requests(body: str, league_ids: list[str]) -> list[APIReque
     for fixture in data.get("response", []):
         league_id = fixture.get("league", {}).get("id")
         fixture_id = fixture.get("fixture", {}).get("id")
+        fixture_status = fixture.get("fixture", {}).get("status", {}).get("short", "")
+        if fixture_status not in ["FT", "AET", "PEN"]:
+            continue
         if not fixture_id or str(league_id) not in league_ids:
             continue
+
         requests.extend(
             [
                 APIRequest(
@@ -68,6 +84,7 @@ def parse_stats_response(
 
 def get_football_api_downloader(
     name: str,
+    date: str,
     http_session: requests.Session | None = None,
     config: dict[str, Any] | None = None,
     request_store: Any | None = None,
@@ -95,6 +112,7 @@ def get_football_api_downloader(
 
     downloader_kwargs: dict[str, Any] = {
         "name": name,
+        "logical_date": date,
         "http_session": http_session,
         "request_limit": REQUEST_DAILY_LIMIT,
         "response_handler": handler,
@@ -109,11 +127,12 @@ def get_football_api_downloader(
     return downloader
 
 
-def start_download(downloader: APIDownloader, date: str) -> None:
+def start_download(downloader: APIDownloader, dates: list[str]) -> None:
     downloader.download_backlog()
-    request = APIRequest(
-        url=f"{BASE_URL}/fixtures",
-        params={"date": date},
-        type="schedule",
-    )
-    downloader.download(request)
+    for date in dates:
+        request = APIRequest(
+            url=f"{BASE_URL}/fixtures",
+            params={"date": date},
+            type="schedule",
+        )
+        downloader.download(request)

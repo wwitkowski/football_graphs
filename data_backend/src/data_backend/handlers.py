@@ -78,7 +78,7 @@ class ResponseHandler:
         self.generators[request_type].append(handler_func)
         return self
 
-    def handle(self, response: APIResponse) -> Any:
+    def handle(self, response: APIResponse) -> tuple[Any, str]:
         """
         Process an API response by running request generators and parsing.
 
@@ -106,7 +106,8 @@ class ResponseHandler:
             raise ValueError(
                 f"No parser registered for response type '{response.request.type}'"
             )
-        return parser(response.body)
+        data, path = parser(response.body)
+        return data, path
 
     def collect_new_requests(self) -> Generator[APIRequest, None, None]:
         """

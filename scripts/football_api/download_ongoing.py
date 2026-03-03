@@ -1,9 +1,11 @@
 import argparse
 import logging
 from collections.abc import Callable
+from datetime import datetime, timedelta
 
 from scripts.football_api.football_api import (
     APIDownloader,
+    build_date_range,
     get_football_api_downloader,
     start_download,
 )
@@ -14,7 +16,9 @@ logger = logging.getLogger(__name__)
 
 def main(
     argv: list[str] | None = None,
-    downloader_factory: Callable[[str], APIDownloader] = get_football_api_downloader,
+    downloader_factory: Callable[
+        [str, str], APIDownloader
+    ] = get_football_api_downloader,
 ) -> None:
     parser = argparse.ArgumentParser(
         description="Download football API data for a date"
@@ -31,8 +35,13 @@ def main(
     )
     args = parser.parse_args(argv)
     logger.info(f"Starting download for {args.name}, date: {args.date}")
-    downloader = downloader_factory(args.name)
-    start_download(downloader, args.date)
+    downloader = downloader_factory(args.name, args.date)
+    base_date = datetime.strptime(args.date, "%Y-%m-%d").date()
+    dates = build_date_range(
+        (base_date - timedelta(days=1)).isoformat(),
+        (base_date + timedelta(days=3)).isoformat(),
+    )
+    start_download(downloader, dates)
 
 
 if __name__ == "__main__":

@@ -21,7 +21,7 @@ def mock_schedule_data():
                     "timezone": "UTC",
                     "date": "2025-08-27T16:45:00+00:00",
                     "status": {
-                        "short": "NS",
+                        "short": "FT",
                     },
                 },
                 "league": {
@@ -209,6 +209,7 @@ def test_get_football_api_downloader_builds_components():
 
     downloader = football_api.get_football_api_downloader(
         name="daily-job",
+        date="2026-02-20",
         http_session=fake_session,
         config={"leagues": [2, 3]},
         request_store=fake_request_store,
@@ -242,10 +243,47 @@ def test_start_download_downloads_backlog_then_schedule_request():
             self.calls.append(("download", request))
 
     downloader = FakeDownloader()
-    football_api.start_download(downloader, "2026-02-20")
+    football_api.start_download(
+        downloader,
+        ["2026-02-19", "2026-02-20", "2026-02-21", "2026-02-22", "2026-02-23"],
+    )
 
     assert downloader.calls[0] == "backlog"
-    _, schedule_request = downloader.calls[1]
-    assert schedule_request.type == "schedule"
-    assert schedule_request.url.endswith("/fixtures")
-    assert schedule_request.params == {"date": "2026-02-20"}
+    downloaded = [call for call in downloader.calls if isinstance(call, tuple)]
+    assert len(downloaded) == 5
+    for _, schedule_request in downloaded:
+        assert schedule_request.type == "schedule"
+        assert schedule_request.url.endswith("/fixtures")
+    assert [req.params["date"] for _, req in downloaded] == [
+        "2026-02-19",
+        "2026-02-20",
+        "2026-02-21",
+        "2026-02-22",
+        "2026-02-23",
+    ]
+
+
+def test_build_date_range_inclusive():
+    dates = football_api.build_date_range("2026-02-19", "2026-02-23")
+    assert dates == [
+        "2026-02-19",
+        "2026-02-20",
+        "2026-02-21",
+        "2026-02-22",
+        "2026-02-23",
+    ]
+
+
+def test_build_date_range_raises_when_end_before_start():
+    with pytest.raises(
+        ValueError, match="end_date must be greater than or equal to start_date"
+    ):
+        football_api.build_date_range("2026-02-23", "2026-02-19")
+
+
+def test_generate_fixture_requests_skips_non_final_status(mock_schedule_data):
+    mock_schedule_data["response"][0]["fixture"]["status"]["short"] = "NS"
+    requests = football_api.generate_fixture_requests(
+        json.dumps(mock_schedule_data), league_ids=["2", "3"]
+    )
+    assert requests == []

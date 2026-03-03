@@ -9,7 +9,7 @@ from data_backend.database.models import RequestStatusEnum
 from data_backend.database.requests import RequestStore
 from data_backend.exceptions import RequestLimitReachedException
 from data_backend.handlers import ResponseHandler
-from data_backend.models import APIRequest
+from data_backend.models import APIRequest, StoredRequest
 from data_backend.rate_limiter import RateLimiter
 from data_backend.requester import HTTPRequester
 
@@ -31,6 +31,7 @@ class APIDownloader:
     def __init__(
         self,
         name: str,
+        logical_date: str,
         response_handler: ResponseHandler,
         http_session: requests.Session | None = None,
         rate_limit: RateLimiter | None = None,
@@ -59,6 +60,7 @@ class APIDownloader:
             Database access object for persisting and retrieving requests.
         """
         self.name = name
+        self.logical_date = logical_date
         self.requests: RequestStore = request_store
         self.handler: ResponseHandler = response_handler
         self.files: S3Client = storage_client
@@ -68,26 +70,27 @@ class APIDownloader:
             request_limit=request_limit,
             request_count=self.requests.get_today_count(name=name),
         )
-        self._queue: Deque[APIRequest] = deque()
+        self._queue: Deque[StoredRequest] = deque()
 
-    def _add(self, requests: list[APIRequest]) -> None:
+    def _add(self, request: StoredRequest) -> None:
         """
-        Add requests to the processing queue and persist them in the database.
+        Add request to the processing queue and persist it in the database.
 
         Parameters
         ----------
-        requests : list of APIRequest
-            The requests to enqueue and persist.
+        request : StoredRequest
+            The request to enqueue and persist.
         """
-        self._queue.extend(requests)
-        self.requests.add(requests, self.name)
+        self._queue.append(request)
+        self.requests.add(request)
 
     def _download(self) -> None:
         """
         Process requests in the queue until it is empty.
         """
         while self._queue:
-            request = self._queue.popleft()
+            r = self._queue.popleft()
+            request = r.request
 
             try:
                 response = self.requester.get(request)
@@ -101,15 +104,18 @@ class APIDownloader:
 
             if response.error:
                 logger.exception(f"Error downloading {request.url}: {response.error}")
-                self.requests.complete(request, RequestStatusEnum.FAILED)
+                self.requests.complete(r, RequestStatusEnum.FAILED)
                 continue
 
             data, path = self.handler.handle(response)
-            self.files.save_json(data, path)
-            new_requests = list(self.handler.collect_new_requests())
-            self._add(new_requests)
+            self.files.save_json(data, f"{r.logical_date}/{path}")
+            for request in self.handler.collect_new_requests():
+                new_request = StoredRequest(
+                    request=request, name=self.name, logical_date=r.logical_date
+                )
+                self._add(new_request)
             req_status = RequestStatusEnum.SUCCEEDED
-            self.requests.complete(request, req_status)
+            self.requests.complete(r, req_status)
 
     def download(self, request: APIRequest) -> None:
         """
@@ -120,7 +126,10 @@ class APIDownloader:
         request : APIRequest
             The request to process.
         """
-        self._add([request])
+        r = StoredRequest(
+            request=request, name=self.name, logical_date=self.logical_date
+        )
+        self._add(r)
         self._download()
 
     def download_backlog(self) -> None:

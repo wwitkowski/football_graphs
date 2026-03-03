@@ -58,6 +58,7 @@ echo "Ensuring requests table exists in '$FOOTGRAPH_DB'..."
 PGPASSWORD=$FOOTGRAPH_DB_PASSWORD psql -h postgres -U "$FOOTGRAPH_DB_USER" -d "$FOOTGRAPH_DB" <<EOSQL
 CREATE TABLE IF NOT EXISTS requests (
   id SERIAL PRIMARY KEY,
+  logical_date TEXT NOT NULL,
   name TEXT NOT NULL,
   url TEXT NOT NULL,
   params JSONB,

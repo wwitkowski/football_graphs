@@ -28,7 +28,7 @@ class S3Client:
         self.s3_client = boto3.client("s3", endpoint_url=endpoint)
         self.bucket_name = bucket_name
 
-    def save_json(self, data: dict[str, Any], key: str):
+    def save_json(self, data: dict[str, Any], key: str) -> None:
         """
         Save a dictionary as a JSON object in the configured S3 bucket.
 

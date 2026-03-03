@@ -17,8 +17,9 @@ def test_main_parses_args_and_starts_download():
 
     fake_downloader = FakeDownloader()
 
-    def fake_get_downloader(name):
+    def fake_get_downloader(name, date):
         calls["name"] = name
+        calls["date"] = date
         return fake_downloader
 
     download_ongoing.main(
@@ -27,11 +28,17 @@ def test_main_parses_args_and_starts_download():
     )
 
     assert calls["name"] == "ongoing-job"
+    assert calls["date"] == "2026-02-20"
     assert fake_downloader.backlog_called is True
-    assert len(fake_downloader.requests) == 1
-    request = fake_downloader.requests[0]
-    assert request.type == "schedule"
-    assert request.params == {"date": "2026-02-20"}
+    assert len(fake_downloader.requests) == 5
+    request_dates = [r.params["date"] for r in fake_downloader.requests]
+    assert request_dates == [
+        "2026-02-19",
+        "2026-02-20",
+        "2026-02-21",
+        "2026-02-22",
+        "2026-02-23",
+    ]
 
 
 def test_main_logs_start_message(caplog):
@@ -47,7 +54,7 @@ def test_main_logs_start_message(caplog):
     with caplog.at_level("INFO"):
         download_ongoing.main(
             argv=["2026-02-20", "my-name"],
-            downloader_factory=lambda name: fake_downloader,
+            downloader_factory=lambda name, date: fake_downloader,
         )
 
     assert "Starting download for my-name, date: 2026-02-20" in caplog.text
