@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import Any
 
 from pydantic import BaseModel
-
-from data_backend.database.models import RequestDB, RequestStatus
 from pydantic.dataclasses import dataclass
+
+from data_backend.database.models import RequestDB
 
 
 class APIRequest(BaseModel):
@@ -39,7 +39,7 @@ class StoredRequest:
             payload=self.request.payload,
             type=self.request.type,
         )
-    
+
     @classmethod
     def from_orm(cls, db_request: RequestDB) -> StoredRequest:
         """

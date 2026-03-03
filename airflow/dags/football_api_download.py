@@ -52,5 +52,3 @@ with DAG(
     )
 
     run_docker_task
-
-

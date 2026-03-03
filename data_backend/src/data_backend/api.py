@@ -111,9 +111,7 @@ class APIDownloader:
             self.files.save_json(data, f"{r.logical_date}/{path}")
             for request in self.handler.collect_new_requests():
                 new_request = StoredRequest(
-                    request=request, 
-                    name=self.name, 
-                    logical_date=r.logical_date
+                    request=request, name=self.name, logical_date=r.logical_date
                 )
                 self._add(new_request)
             req_status = RequestStatusEnum.SUCCEEDED
@@ -128,7 +126,9 @@ class APIDownloader:
         request : APIRequest
             The request to process.
         """
-        r = StoredRequest(request=request, name=self.name, logical_date=self.logical_date)
+        r = StoredRequest(
+            request=request, name=self.name, logical_date=self.logical_date
+        )
         self._add(r)
         self._download()
 

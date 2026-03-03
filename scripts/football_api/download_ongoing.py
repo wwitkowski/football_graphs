@@ -1,7 +1,7 @@
 import argparse
 import logging
-from datetime import datetime, timedelta
 from collections.abc import Callable
+from datetime import datetime, timedelta
 
 from scripts.football_api.football_api import (
     APIDownloader,
@@ -16,7 +16,9 @@ logger = logging.getLogger(__name__)
 
 def main(
     argv: list[str] | None = None,
-    downloader_factory: Callable[[str, str], APIDownloader] = get_football_api_downloader,
+    downloader_factory: Callable[
+        [str, str], APIDownloader
+    ] = get_football_api_downloader,
 ) -> None:
     parser = argparse.ArgumentParser(
         description="Download football API data for a date"

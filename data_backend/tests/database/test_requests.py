@@ -19,7 +19,10 @@ def test_get_pending(sqlite_session_factory):
     requests = RequestStore(sqlite_session_factory)
     r1 = StoredRequest(
         request=APIRequest(
-            url="test.com", type="test", params={"status": "pending"}, payload={"param": 1}
+            url="test.com",
+            type="test",
+            params={"status": "pending"},
+            payload={"param": 1},
         ),
         name="test_name",
         logical_date="2026-02-20",
@@ -75,7 +78,10 @@ def test_get_today_count(sqlite_session_factory):
     requests = RequestStore(sqlite_session_factory)
     r1 = StoredRequest(
         request=APIRequest(
-            url="test.com", type="test", params={"status": "pending"}, payload={"param": 1}
+            url="test.com",
+            type="test",
+            params={"status": "pending"},
+            payload={"param": 1},
         ),
         name="test_name",
         logical_date="2026-02-20",
@@ -127,7 +133,10 @@ def test_complete_request(sqlite_session_factory):
     requests = RequestStore(sqlite_session_factory)
     r1 = StoredRequest(
         request=APIRequest(
-            url="test.com", type="test", params={"status": "pending"}, payload={"param": 1}
+            url="test.com",
+            type="test",
+            params={"status": "pending"},
+            payload={"param": 1},
         ),
         name="test_name",
         logical_date="2026-02-20",
