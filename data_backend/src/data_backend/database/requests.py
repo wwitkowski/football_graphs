@@ -6,7 +6,7 @@ from sqlmodel import Session, func, select
 
 from data_backend.database.connection import get_db_url
 from data_backend.database.models import RequestDB, RequestStatusEnum
-from data_backend.models import APIRequest
+from data_backend.models import StoredRequest
 
 DEFAULT_SESSION_FACTORY = sessionmaker(
     bind=create_engine(get_db_url()), class_=Session, expire_on_commit=False
@@ -33,21 +33,20 @@ class RequestStore:
         """
         self.session_factory = session_factory
 
-    def get_pending(self, name: str) -> list[APIRequest]:
+    def get_pending(self, name: str) -> list[StoredRequest]:
         """
         Retrieve all pending requests, optionally filtering by historical or ongoing.
 
         Parameters
         ----------
-        historical : bool, optional
-            If True, only returns historical requests. If False (default), returns
-            ongoing requests.
+        name : str
+            The name of the request batch to filter by.
 
         Returns
         -------
-        list of APIRequest
-            A list of APIRequest objects with status ``PENDING`` and matching the
-            specified historical flag.
+        list of StoredRequest
+            A list of StoredRequest objects with status ``PENDING`` and matching the
+            specified name.
         """
         with self.session_factory() as session:
             stmt = select(RequestDB).where(
@@ -55,7 +54,7 @@ class RequestStore:
                 RequestDB.name == name,
             )
             result = session.exec(stmt).all()
-            return [APIRequest.from_orm(r) for r in result]
+            return [StoredRequest.from_orm(r) for r in result]
 
     def get_today_count(self, name: str) -> int:
         """
@@ -76,36 +75,35 @@ class RequestStore:
             )
             return session.exec(stmt).one()
 
-    def add(self, api_requests: list[APIRequest], name: str) -> None:
+    def add(self, request: StoredRequest) -> None:
         """
         Insert new API requests into the database.
 
         Parameters
         ----------
-        api_requests : list of APIRequest
-            A list of APIRequest objects to persist in the database.
+        request : StoredRequest
+            The request object to be added to the database. The `id` field will be
+            populated after insertion.
         """
-        db_requests = [r.to_orm(name=name) for r in api_requests]
+        db_request = request.to_orm()
         with self.session_factory() as session:
-            session.add_all(db_requests)
+            session.add(db_request)
             session.commit()
+        request.id = db_request.id
 
-        for api_req, db_req in zip(api_requests, db_requests):
-            api_req.id = db_req.id
-
-    def complete(self, api_request: APIRequest, status: RequestStatusEnum) -> None:
+    def complete(self, request: StoredRequest, status: RequestStatusEnum) -> None:
         """
         Mark a request as completed by updating its status and updated_at timestamp.
 
         Parameters
         ----------
-        api_request : APIRequest
+        request : StoredRequest
             The request object to update.
         status : RequestStatusEnum
             The final status to assign to the request.
         """
         with self.session_factory() as session:
-            db_request = session.get(RequestDB, api_request.id)
+            db_request = session.get(RequestDB, request.id)
             db_request.status = status
             db_request.updated_at = datetime.now(timezone.utc)
             session.commit()

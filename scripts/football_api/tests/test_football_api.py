@@ -21,7 +21,7 @@ def mock_schedule_data():
                     "timezone": "UTC",
                     "date": "2025-08-27T16:45:00+00:00",
                     "status": {
-                        "short": "NS",
+                        "short": "FT",
                     },
                 },
                 "league": {
@@ -209,6 +209,7 @@ def test_get_football_api_downloader_builds_components():
 
     downloader = football_api.get_football_api_downloader(
         name="daily-job",
+        date="2026-02-20",
         http_session=fake_session,
         config={"leagues": [2, 3]},
         request_store=fake_request_store,
@@ -242,10 +243,32 @@ def test_start_download_downloads_backlog_then_schedule_request():
             self.calls.append(("download", request))
 
     downloader = FakeDownloader()
-    football_api.start_download(downloader, "2026-02-20")
+    football_api.start_download(
+        downloader,
+        ["2026-02-19", "2026-02-20", "2026-02-21", "2026-02-22", "2026-02-23"],
+    )
 
     assert downloader.calls[0] == "backlog"
-    _, schedule_request = downloader.calls[1]
-    assert schedule_request.type == "schedule"
-    assert schedule_request.url.endswith("/fixtures")
-    assert schedule_request.params == {"date": "2026-02-20"}
+    downloaded = [call for call in downloader.calls if isinstance(call, tuple)]
+    assert len(downloaded) == 5
+    for _, schedule_request in downloaded:
+        assert schedule_request.type == "schedule"
+        assert schedule_request.url.endswith("/fixtures")
+    assert [req.params["date"] for _, req in downloaded] == [
+        "2026-02-19",
+        "2026-02-20",
+        "2026-02-21",
+        "2026-02-22",
+        "2026-02-23",
+    ]
+
+
+def test_build_date_range_inclusive():
+    dates = football_api.build_date_range("2026-02-19", "2026-02-23")
+    assert dates == [
+        "2026-02-19",
+        "2026-02-20",
+        "2026-02-21",
+        "2026-02-22",
+        "2026-02-23",
+    ]
