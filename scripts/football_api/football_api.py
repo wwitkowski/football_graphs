@@ -11,6 +11,7 @@ from data_backend.api import APIDownloader
 from data_backend.config import get_config
 from data_backend.handlers import ResponseHandler
 from data_backend.models import APIRequest
+from data_backend.rate_limiter import RateLimiter
 
 BASE_URL = "https://api-football-v1.p.rapidapi.com/v3"
 API_KEY = os.environ.get("API_FOOTBALL_KEY")
@@ -110,11 +111,14 @@ def get_football_api_downloader(
         .add_request_generator("schedule", generate_fixture_requests_filtered)
     )
 
+    rate_limiter = RateLimiter(events_per_unit=10, unit="minute")
+
     downloader_kwargs: dict[str, Any] = {
         "name": name,
         "logical_date": date,
         "http_session": http_session,
         "request_limit": REQUEST_DAILY_LIMIT,
+        "rate_limit": rate_limiter,
         "response_handler": handler,
     }
     if request_store is not None:
