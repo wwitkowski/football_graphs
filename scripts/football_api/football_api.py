@@ -6,12 +6,12 @@ from functools import partial
 from pathlib import Path
 from typing import Any
 
-from data_backend.rate_limiter import RateLimiter
 import requests
 from data_backend.api import APIDownloader
 from data_backend.config import get_config
 from data_backend.handlers import ResponseHandler
 from data_backend.models import APIRequest
+from data_backend.rate_limiter import RateLimiter
 
 BASE_URL = "https://api-football-v1.p.rapidapi.com/v3"
 API_KEY = os.environ.get("API_FOOTBALL_KEY")
