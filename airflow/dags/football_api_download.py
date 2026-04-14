@@ -17,9 +17,9 @@ PROJECT_DATA_ROOT = os.environ.get("PROJECT_DATA", "")
 with DAG(
     dag_id,
     default_args=default_args,
-    schedule=None,
-    start_date=pendulum.datetime(2025, 7, 18),
-    catchup=True,
+    schedule="0 13 * * *", #
+    start_date=pendulum.datetime(2026, 4, 15),
+    catchup=False,
 ) as dag:
     run_docker_task = DockerOperator(
         task_id="download_ongoing",
