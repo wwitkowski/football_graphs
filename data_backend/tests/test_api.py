@@ -12,7 +12,7 @@ from data_backend.models import APIRequest, StoredRequest
 from tests.conftest import FakeHTTPSession, FakeResponse
 
 
-def test_download(fake_s3_bucket, sqlite_session_factory):
+def test_add_then_download(fake_s3_bucket, sqlite_session_factory):
     test_key = "response.json"
 
     def handle(response):
@@ -31,7 +31,8 @@ def test_download(fake_s3_bucket, sqlite_session_factory):
     )
 
     req = APIRequest(url="http://example.com", type="test")
-    downloader.download(req)
+    downloader.add(req)
+    downloader.download()
 
     with sqlite_session_factory() as session:
         result = session.exec(select(RequestDB).where(RequestDB.url == req.url)).one()
@@ -118,7 +119,8 @@ def test_download_requester_error(fake_s3_bucket, sqlite_session_factory):
     )
 
     req = APIRequest(url="http://example.com", type="test")
-    downloader.download(req)
+    downloader.add(req)
+    downloader.download()
 
     with sqlite_session_factory() as session:
         result = session.exec(select(RequestDB).where(RequestDB.url == req.url)).one()
@@ -140,7 +142,8 @@ def test_download_limit_reached(fake_s3_bucket, sqlite_session_factory):
     )
 
     req = APIRequest(url="http://example.com", type="test")
-    downloader.download(req)
+    downloader.add(req)
+    downloader.download()
 
     with sqlite_session_factory() as session:
         result = session.exec(select(RequestDB).where(RequestDB.url == req.url)).one()

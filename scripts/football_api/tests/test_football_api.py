@@ -239,8 +239,11 @@ def test_start_download_downloads_backlog_then_schedule_request():
         def download_backlog(self):
             self.calls.append("backlog")
 
-        def download(self, request):
-            self.calls.append(("download", request))
+        def add(self, request):
+            self.calls.append(("add", request))
+
+        def download(self):
+            self.calls.append("download")
 
     downloader = FakeDownloader()
     football_api.start_download(
@@ -249,6 +252,7 @@ def test_start_download_downloads_backlog_then_schedule_request():
     )
 
     assert downloader.calls[0] == "backlog"
+    assert downloader.calls[-1] == "download"
     downloaded = [call for call in downloader.calls if isinstance(call, tuple)]
     assert len(downloaded) == 5
     for _, schedule_request in downloaded:

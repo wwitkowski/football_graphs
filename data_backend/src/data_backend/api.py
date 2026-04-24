@@ -72,7 +72,7 @@ class APIDownloader:
         )
         self._queue: Deque[StoredRequest] = deque()
 
-    def _add(self, request: StoredRequest) -> None:
+    def add(self, request: APIRequest) -> None:
         """
         Add request to the processing queue and persist it in the database.
 
@@ -81,10 +81,13 @@ class APIDownloader:
         request : StoredRequest
             The request to enqueue and persist.
         """
-        self._queue.append(request)
-        self.requests.add(request)
+        stored_request = StoredRequest(
+            request=request, name=self.name, logical_date=self.logical_date
+        )
+        self.requests.add(stored_request)
+        self._queue.append(stored_request)
 
-    def _download(self) -> None:
+    def download(self) -> None:
         """
         Process requests in the queue until it is empty.
         """
@@ -100,8 +103,6 @@ class APIDownloader:
                 )
                 return
 
-            print(f"DEBUG Response: {response}")
-
             if response.error:
                 logger.exception(f"Error downloading {request.url}: {response.error}")
                 self.requests.complete(r, RequestStatusEnum.FAILED)
@@ -113,24 +114,9 @@ class APIDownloader:
                 new_request = StoredRequest(
                     request=request, name=self.name, logical_date=r.logical_date
                 )
-                self._add(new_request)
+                self.add(new_request)
             req_status = RequestStatusEnum.SUCCEEDED
             self.requests.complete(r, req_status)
-
-    def download(self, request: APIRequest) -> None:
-        """
-        Add a single request to the queue and start download process.
-
-        Parameters
-        ----------
-        request : APIRequest
-            The request to process.
-        """
-        r = StoredRequest(
-            request=request, name=self.name, logical_date=self.logical_date
-        )
-        self._add(r)
-        self._download()
 
     def download_backlog(self) -> None:
         """
@@ -139,4 +125,4 @@ class APIDownloader:
         pending_requests = self.requests.get_pending(self.name)
         logger.info(f"Found {len(pending_requests)} pending requests to download.")
         self._queue.extend(pending_requests)
-        self._download()
+        self.download()
