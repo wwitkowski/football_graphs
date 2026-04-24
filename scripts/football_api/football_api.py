@@ -68,6 +68,7 @@ def generate_fixture_requests(body: str, league_ids: list[str]) -> list[APIReque
                 ),
             ]
         )
+    logger.info(f"Generated {len(requests)} stats requests from schedule response")
     return requests
 
 
@@ -139,4 +140,5 @@ def start_download(downloader: APIDownloader, dates: list[str]) -> None:
             params={"date": date},
             type="schedule",
         )
-        downloader.download(request)
+        downloader.add(request)
+    downloader.download()
