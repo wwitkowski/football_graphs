@@ -106,6 +106,47 @@ def test_download_backlog(fake_s3_bucket, sqlite_session_factory):
     assert json.loads(body) == {"message": "OK"}
 
 
+def test_download_adds_generated_requests(fake_s3_bucket, sqlite_session_factory):
+    fake_session = FakeHTTPSession(FakeResponse("OK", 200))
+    requests = RequestStore(sqlite_session_factory)
+
+    def handle(response):
+        return {"message": response}, "response.json"
+
+    def generate_requests(_body):
+        return [APIRequest(url="http://example.com/follow-up", type="follow_up")]
+
+    handler = (
+        ResponseHandler()
+        .add_parser("seed", handle)
+        .add_parser("follow_up", handle)
+        .add_request_generator("seed", generate_requests)
+    )
+
+    downloader = APIDownloader(
+        name="test_name",
+        logical_date="2026-02-20",
+        http_session=fake_session,
+        response_handler=handler,
+        request_store=requests,
+        storage_client=S3Client(bucket_name=fake_s3_bucket),
+    )
+
+    downloader.add(APIRequest(url="http://example.com/seed", type="seed"))
+    downloader.download()
+
+    with sqlite_session_factory() as session:
+        results = session.exec(select(RequestDB).order_by(RequestDB.id)).all()
+
+    assert len(results) == 2
+    assert results[0].url == "http://example.com/seed"
+    assert results[0].status == "Succeeded"
+    assert results[1].url == "http://example.com/follow-up"
+    assert results[1].type == "follow_up"
+    assert results[1].status == "Succeeded"
+    assert results[1].logical_date == "2026-02-20"
+
+
 def test_download_requester_error(fake_s3_bucket, sqlite_session_factory):
     fake_session = FakeHTTPSession(FakeResponse("NOT OK", 404))
 
