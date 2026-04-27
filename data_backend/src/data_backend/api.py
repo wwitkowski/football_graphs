@@ -78,7 +78,7 @@ class APIDownloader:
 
         Parameters
         ----------
-        request : StoredRequest
+        request : APIRequest
             The request to enqueue and persist.
         """
         stored_request = StoredRequest(
@@ -111,10 +111,7 @@ class APIDownloader:
             data, path = self.handler.handle(response)
             self.files.save_json(data, f"{r.logical_date}/{path}")
             for request in self.handler.collect_new_requests():
-                new_request = StoredRequest(
-                    request=request, name=self.name, logical_date=r.logical_date
-                )
-                self.add(new_request)
+                self.add(request)
             req_status = RequestStatusEnum.SUCCEEDED
             self.requests.complete(r, req_status)
 
