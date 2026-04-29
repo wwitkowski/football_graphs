@@ -38,7 +38,7 @@ def parse_schedule_response(body: str) -> tuple[dict[str, Any], str]:
     date = data.get("parameters", {}).get("date", "")
     if not date:
         logger.warning("Schedule response missing 'date' parameter")
-    return data, f"{date}_schedule.json"
+    return data, f"schedule_{date}.json"
 
 
 def generate_fixture_requests(body: str, league_ids: list[str]) -> list[APIRequest]:
@@ -81,7 +81,7 @@ def parse_stats_response(
     if not fixture_id or not endpoint:
         logger.warning("Stats response missing 'fixture' parameter or 'get' field")
     filename = endpoint.split("/")[-1]
-    return data, f"{fixture_id}_{filename}.json"
+    return data, f"{filename}_{fixture_id}.json"
 
 
 def get_football_api_downloader(

@@ -91,6 +91,7 @@ class APIDownloader:
         """
         Process requests in the queue until it is empty.
         """
+        logger.info(f"Starting download. Current request count: {self.requester.request_count}")
         while self._queue:
             r = self._queue.popleft()
             request = r.request
@@ -98,7 +99,7 @@ class APIDownloader:
             try:
                 response = self.requester.get(request)
             except RequestLimitReachedException:
-                logger.exception(
+                logger.info(
                     f"Request limit of {self.requester.request_limit} reached."
                 )
                 return

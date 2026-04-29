@@ -142,7 +142,7 @@ def test_parse_schedule_response_success(mock_schedule_data):
         json.dumps(mock_schedule_data)
     )
     assert data == mock_schedule_data
-    assert filename == "2021-01-29_schedule.json"
+    assert filename == "schedule_2021-01-29.json"
 
 
 def test_parse_schedule_response_missing_date_logs_warning(caplog):
@@ -151,7 +151,7 @@ def test_parse_schedule_response_missing_date_logs_warning(caplog):
             json.dumps({"parameters": {}, "response": []})
         )
     assert data["response"] == []
-    assert filename == "_schedule.json"
+    assert filename == "schedule_.json"
     assert "missing 'date' parameter" in caplog.text
 
 
@@ -173,7 +173,7 @@ def test_parse_stats_response_for_match_stats(mock_fixture_stats_data):
         json.dumps(mock_fixture_stats_data)
     )
     assert data == mock_fixture_stats_data
-    assert filename == "215662_statistics.json"
+    assert filename == "statistics_215662.json"
 
 
 def test_parse_stats_response_for_player_stats(mock_player_stats_data):
@@ -181,13 +181,13 @@ def test_parse_stats_response_for_player_stats(mock_player_stats_data):
         json.dumps(mock_player_stats_data)
     )
     assert data == mock_player_stats_data
-    assert filename == "169080_players.json"
+    assert filename == "players_169080.json"
 
 
 def test_parse_stats_response_missing_fields_logs_warning(caplog):
     with caplog.at_level("WARNING"):
         _, filename = football_api.parse_stats_response(json.dumps({"parameters": {}}))
-    assert filename == "None_.json"
+    assert filename == "_None.json"
     assert "missing 'fixture' parameter or 'get' field" in caplog.text
 
 
